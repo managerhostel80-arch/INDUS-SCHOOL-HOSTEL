@@ -472,7 +472,7 @@ function App() {
                 <p style={{ color: '#6c757d' }}>No requests found for this category.</p>
               ) : (
                 filteredRequests.map(req => (
-                  <div key={req._id} style={{ background: 'white', padding: '12px 15px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div key={req._id} className="request-summary-row" style={{ background: 'white', padding: '12px 15px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <strong>{req.requestId} - {req.category}</strong>
                       <div style={{ fontSize: '13px', color: '#6c757d' }}>{req.location} | Reported By: <b>{req.reportedByName || 'N/A'}</b></div>
