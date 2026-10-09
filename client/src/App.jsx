@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
@@ -352,11 +353,11 @@ function App() {
   const completedJobs = requests.filter(r => r.status === 'Completed');
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', margin: 0, padding: 0 }}>
+    <div className="app-shell" style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', margin: 0, padding: 0 }}>
       {/* Top Navbar */}
-      <header style={{ background: '#0d6efd', color: 'white', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>Hostel 360 – Maintenance System</h2>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 className="app-header-title" style={{ margin: 0 }}>Hostel 360 – Maintenance System</h2>
+        <div className="app-header-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={enablePushNotifications}
@@ -414,15 +415,15 @@ function App() {
         </div>
       )}
 
-      <div style={{ padding: '30px', maxWidth: '1100px', margin: '0 auto' }}>
+      <div className="page-container" style={{ padding: '30px', maxWidth: '1100px', margin: '0 auto' }}>
         
         {/* ADMIN DASHBOARD WITH FULL PROCESS SIDEBAR */}
         {activeTab === 'admin-dashboard' && (
-          <div style={{ display: 'flex', background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden', minHeight: '650px' }}>
+          <div className="dashboard-layout" style={{ display: 'flex', background: 'white', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', overflow: 'hidden', minHeight: '650px' }}>
             
-            <div style={{ width: '260px', background: '#0f2c59', color: 'white', padding: '20px 0' }}>
+            <div className="dashboard-sidebar" style={{ width: '260px', background: '#0f2c59', color: 'white', padding: '20px 0' }}>
               <div style={{ padding: '0 20px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold' }}>Hostel 360 Process Flow</div>
-              <div style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
+              <div className="dashboard-sidebar-links" style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
                 <button onClick={() => setActiveTab('admin-dashboard')} style={sidebarBtnStyle(true)}>1. Dashboard Overview</button>
                 <button onClick={() => setActiveTab('report')} style={sidebarBtnStyle(false)}>2. Report Issue (Warden)</button>
                 <button onClick={() => setActiveTab('new-complaint-view')} style={sidebarBtnStyle(false)}>3. New Complaint ({newComplaintJobs.length})</button>
@@ -435,10 +436,10 @@ function App() {
               </div>
             </div>
 
-            <div style={{ flex: 1, padding: '25px', background: '#f8f9fa' }}>
+            <div className="dashboard-content" style={{ flex: 1, padding: '25px', background: '#f8f9fa' }}>
               <h3 style={{ marginTop: 0, marginBottom: '20px' }}>Dashboard Overview</h3>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '25px' }}>
+              <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px', marginBottom: '25px' }}>
                 <div onClick={() => setActiveTab('new-complaint-view')} role="button" tabIndex={0} style={{...cardStyle('#fff3cd', '#664d03'), cursor: 'pointer'}}>
                   <div style={{ fontSize: '12px', fontWeight: 'bold' }}>NEW</div>
                   <div style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.new}</div>
@@ -558,6 +559,7 @@ function App() {
               </div>
             </div>
 
+            <div className="table-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: '#f8f9fa', textAlign: 'left' }}>
@@ -597,6 +599,7 @@ function App() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 
