@@ -467,23 +467,25 @@ function App() {
                 ))}
               </div>
 
-              <h4>Filtered Requests Summary</h4>
-              {filteredRequests.length === 0 ? (
-                <p style={{ color: '#6c757d' }}>No requests found for this category.</p>
-              ) : (
-                filteredRequests.map(req => (
-                  <div key={req._id} className="request-summary-row" style={{ background: 'white', padding: '12px 15px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <strong>{req.requestId} - {req.category}</strong>
-                      <div style={{ fontSize: '13px', color: '#6c757d' }}>{req.location} | Reported By: <b>{req.reportedByName || 'N/A'}</b></div>
+              <section className="dashboard-request-summary">
+                <h4>Filtered Requests Summary</h4>
+                {filteredRequests.length === 0 ? (
+                  <p style={{ color: '#6c757d' }}>No requests found for this category.</p>
+                ) : (
+                  filteredRequests.map(req => (
+                    <div key={req._id} className="request-summary-row" style={{ background: 'white', padding: '12px 15px', borderRadius: '6px', marginBottom: '10px', border: '1px solid #dee2e6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>{req.requestId} - {req.category}</strong>
+                        <div style={{ fontSize: '13px', color: '#6c757d' }}>{req.location} | Reported By: <b>{req.reportedByName || 'N/A'}</b></div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        {getUrgencyBadge(req.urgencyLevel)}
+                        <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#e2e3e5', fontSize: '12px', fontWeight: 'bold' }}>{req.status}</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      {getUrgencyBadge(req.urgencyLevel)}
-                      <span style={{ padding: '4px 8px', borderRadius: '4px', background: '#e2e3e5', fontSize: '12px', fontWeight: 'bold' }}>{req.status}</span>
-                    </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </section>
             </div>
           </div>
         )}

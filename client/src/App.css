@@ -118,6 +118,10 @@ img {
     font-size: 11px !important;
   }
 
+  .dashboard-request-summary {
+    display: none;
+  }
+
   .request-summary-row {
     flex-wrap: wrap;
     gap: 8px;
