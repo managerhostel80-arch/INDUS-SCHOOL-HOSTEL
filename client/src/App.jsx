@@ -424,15 +424,15 @@ function App() {
             <div className="dashboard-sidebar" style={{ width: '260px', background: '#0f2c59', color: 'white', padding: '20px 0' }}>
               <div style={{ padding: '0 20px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold' }}>Hostel 360 Process Flow</div>
               <div className="dashboard-sidebar-links" style={{ display: 'flex', flexDirection: 'column', marginTop: '10px' }}>
-                <button onClick={() => setActiveTab('admin-dashboard')} style={sidebarBtnStyle(true)}>1. Dashboard Overview</button>
-                <button onClick={() => setActiveTab('report')} style={sidebarBtnStyle(false)}>2. Report Issue (Warden)</button>
-                <button onClick={() => setActiveTab('new-complaint-view')} style={sidebarBtnStyle(false)}>3. New Complaint ({newComplaintJobs.length})</button>
-                <button onClick={() => setActiveTab('dashboard')} style={sidebarBtnStyle(false)}>4. Maintenance Requests</button>
-                <button onClick={() => setActiveTab('electrician-in-progress')} style={sidebarBtnStyle(false)}>5. In Progress Jobs ({acceptedJobs.length + inProgressJobs.length})</button>
-                <button onClick={() => setActiveTab('electrician-completion')} style={sidebarBtnStyle(false)}>6. Completion Panel</button>
-                <button onClick={() => setActiveTab('completed-status')} style={sidebarBtnStyle(false)}>7. Completed Status</button>
-                <button onClick={() => setActiveTab('team-directory-screen9')} style={sidebarBtnStyle(false)}>8. Team Directory</button>
-                <button onClick={() => setActiveTab('db-management')} style={sidebarBtnStyle(false)}>9. Settings & Database</button>
+                <button onClick={() => setActiveTab('admin-dashboard')} data-mobile-label="1 Home" aria-label="1. Dashboard Overview" style={sidebarBtnStyle(true)}>1. Dashboard Overview</button>
+                <button onClick={() => setActiveTab('report')} data-mobile-label="2 Report" aria-label="2. Report Issue (Warden)" style={sidebarBtnStyle(false)}>2. Report Issue (Warden)</button>
+                <button onClick={() => setActiveTab('new-complaint-view')} data-mobile-label="3 New" aria-label={`3. New Complaint (${newComplaintJobs.length})`} style={sidebarBtnStyle(false)}>3. New Complaint ({newComplaintJobs.length})</button>
+                <button onClick={() => setActiveTab('dashboard')} data-mobile-label="4 Requests" aria-label="4. Maintenance Requests" style={sidebarBtnStyle(false)}>4. Maintenance Requests</button>
+                <button onClick={() => setActiveTab('electrician-in-progress')} data-mobile-label="5 Active" aria-label={`5. In Progress Jobs (${acceptedJobs.length + inProgressJobs.length})`} style={sidebarBtnStyle(false)}>5. In Progress Jobs ({acceptedJobs.length + inProgressJobs.length})</button>
+                <button onClick={() => setActiveTab('electrician-completion')} data-mobile-label="6 Finish" aria-label="6. Completion Panel" style={sidebarBtnStyle(false)}>6. Completion Panel</button>
+                <button onClick={() => setActiveTab('completed-status')} data-mobile-label="7 Done" aria-label="7. Completed Status" style={sidebarBtnStyle(false)}>7. Completed Status</button>
+                <button onClick={() => setActiveTab('team-directory-screen9')} data-mobile-label="8 Team" aria-label="8. Team Directory" style={sidebarBtnStyle(false)}>8. Team Directory</button>
+                <button onClick={() => setActiveTab('db-management')} data-mobile-label="9 Setup" aria-label="9. Settings & Database" style={sidebarBtnStyle(false)}>9. Settings & Database</button>
               </div>
             </div>
 
