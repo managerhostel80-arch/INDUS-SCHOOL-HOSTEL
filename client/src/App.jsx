@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import './App.css';
 
 function App() {
   const [activeTab, setActiveTab] = useState('admin-dashboard');
@@ -183,12 +184,12 @@ function App() {
     <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Header with School Name */}
-      <header style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box' }}>
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box' }}>
         <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold' }}>Montessori Indus Residential School</h2>
         <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal' }}>Hostel 360 – Maintenance System</h3>
         
         {/* Navigation Tabs Bar */}
-        <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '4px', width: '100%' }}>
+        <div className="app-nav-tabs" style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '4px', width: '100%' }}>
           <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Dashboard</button>
           <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report</button>
           <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New ({newComplaintJobs.length})</button>
@@ -202,14 +203,14 @@ function App() {
       </header>
 
       {/* Main Content Body */}
-      <div style={{ padding: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div className="app-main" style={{ padding: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         
         {/* DASHBOARD TAB */}
         {activeTab === 'admin-dashboard' && (
-          <div>
+          <div className="dashboard-overview">
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
               <div onClick={() => setActiveTab('new-complaint-view')} style={{ background: '#fff3cd', color: '#664d03', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
@@ -229,7 +230,7 @@ function App() {
             </div>
 
             <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
                 <button key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0d6efd' : 'white', color: filterCategory === cat ? 'white' : '#333', border: '1px solid #ccc', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>
                   {cat}
@@ -237,20 +238,22 @@ function App() {
               ))}
             </div>
 
-            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
-            {filteredRequests.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
-            ) : (
-              filteredRequests.map(req => (
-                <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
-                    {getUrgencyBadge(req.urgencyLevel)}
+            <section className="dashboard-request-summary">
+              <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
+              {filteredRequests.length === 0 ? (
+                <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
+              ) : (
+                filteredRequests.map(req => (
+                  <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
+                      {getUrgencyBadge(req.urgencyLevel)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Loc: {req.location} | By: {req.reportedByName || 'N/A'}</div>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Loc: {req.location} | By: {req.reportedByName || 'N/A'}</div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </section>
           </div>
         )}
 
