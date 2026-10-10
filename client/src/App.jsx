@@ -195,7 +195,7 @@ function App() {
         <div className="app-nav-tabs" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'center', overflowX: 'hidden', paddingBottom: '4px', width: '100%' }}>
           <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Dashboard</button>
           <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report</button>
-          <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New ({newComplaintJobs.length})</button>
+          <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaint</button>
           <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>Requests</button>
           <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>Progress</button>
           <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete</button>
