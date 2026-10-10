@@ -174,6 +174,36 @@ function App() {
     );
   };
 
+  const renderRequestDetails = (req) => {
+    const photoUrl = req.photo
+      ? (req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`)
+      : null;
+
+    return (
+      <div>
+        <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
+        <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+        <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+        <p style={{ margin: '3px 0' }}>Mobile: {req.reportedByMobile || 'N/A'}</p>
+        <p style={{ margin: '3px 0' }}>
+          Reported at: {req.reportedAt ? new Date(req.reportedAt).toLocaleString() : 'N/A'}
+        </p>
+        {photoUrl && (
+          <div style={{ margin: '8px 0' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+            <a href={photoUrl} target="_blank" rel="noreferrer">
+              <img
+                src={photoUrl}
+                alt={`Complaint photo for ${req.requestId}`}
+                style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+              />
+            </a>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const filteredRequests = filterCategory === 'All' 
     ? requests 
     : requests.filter(r => r.category === filterCategory);
@@ -252,7 +282,10 @@ function App() {
                       <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
                       {getUrgencyBadge(req.urgencyLevel)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Loc: {req.location} | By: {req.reportedByName || 'N/A'}</div>
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
+                      <p style={{ margin: '3px 0' }}>Status: {req.status}</p>
+                      {renderRequestDetails(req)}
+                    </div>
                   </div>
                 ))
               )}
@@ -320,31 +353,7 @@ function App() {
                     <strong>{req.requestId} - {req.category}</strong>
                     {getUrgencyBadge(req.urgencyLevel)}
                   </div>
-                  <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
-                  <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
-                  <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
-                  <p style={{ margin: '3px 0' }}>Mobile: {req.reportedByMobile || 'N/A'}</p>
-                  <p style={{ margin: '3px 0' }}>
-                    Reported at: {req.reportedAt ? new Date(req.reportedAt).toLocaleString() : 'N/A'}
-                  </p>
-                  {req.photo ? (
-                    <div style={{ margin: '8px 0' }}>
-                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
-                      <a
-                        href={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <img
-                          src={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
-                          alt={`Complaint photo for ${req.requestId}`}
-                          style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
-                        />
-                      </a>
-                    </div>
-                  ) : (
-                    <p style={{ margin: '3px 0', color: '#666' }}>No complaint photo attached.</p>
-                  )}
+                  {renderRequestDetails(req)}
                   <input type="text" placeholder="Tech Name" value={tech.name} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, name: e.target.value }})} style={{...inputStyle, margin: '4px 0'}} />
                   <input type="tel" placeholder="Tech Mobile" value={tech.mobile} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, mobile: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                   <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
@@ -364,8 +373,7 @@ function App() {
                   <strong>{req.requestId} - {req.category}</strong>
                   <span><b>{req.status}</b></span>
                 </div>
-                <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
-                <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+                {renderRequestDetails(req)}
               </div>
             ))}
           </div>
@@ -378,10 +386,10 @@ function App() {
             {[...acceptedJobs, ...inProgressJobs].map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong>{req.category}</strong>
+                  <strong>{req.requestId} - {req.category}</strong>
                   <span>{req.status}</span>
                 </div>
-                <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
+                {renderRequestDetails(req)}
                 {req.status === 'Accepted' && (
                   <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Start</button>
                 )}
@@ -396,7 +404,8 @@ function App() {
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completion</h3>
             {inProgressJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <strong>{req.category} - {req.location}</strong>
+                <strong>{req.requestId} - {req.category}</strong>
+                {renderRequestDetails(req)}
                 <input type="file" accept="image/*" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})} style={{...inputStyle, margin: '4px 0'}} />
                 <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                 <button onClick={() => updateStatus(req._id, 'Completed', true)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Mark Done</button>
@@ -411,8 +420,8 @@ function App() {
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs</h3>
             {completedJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <strong>{req.category} - {req.location}</strong>
-                <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+                <strong>{req.requestId} - {req.category}</strong>
+                {renderRequestDetails(req)}
               </div>
             ))}
           </div>
