@@ -412,14 +412,35 @@ function App() {
         {/* IN PROGRESS TAB */}
         {activeTab === 'electrician-in-progress' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>In Progress</h3>
-            {[...acceptedJobs, ...inProgressJobs].map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complaint Progress</h3>
+            {requests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
+            ) : requests.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <strong>{req.requestId} - {req.category}</strong>
-                  <span>{req.status}</span>
+                  <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
+                    <b>{req.status === 'Completed' ? 'Completed' : 'Not completed'}</b>
+                  </span>
                 </div>
-                {renderRequestDetails(req)}
+                <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
+                {req.photo && (
+                  <div style={{ margin: '8px 0' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+                    <a
+                      href={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <img
+                        src={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                        alt={`Complaint photo for ${req.requestId}`}
+                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                      />
+                    </a>
+                  </div>
+                )}
                 {req.status === 'Accepted' && (
                   <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Start</button>
                 )}
