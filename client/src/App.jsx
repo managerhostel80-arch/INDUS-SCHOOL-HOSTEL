@@ -178,9 +178,29 @@ function App() {
     );
   };
 
-  const renderRequestDetails = (req) => {
-    const photoUrl = getPhotoUrl(req.photo);
+  const renderPhoto = (label, photo, alt) => {
+    const photoUrl = getPhotoUrl(photo);
+    return (
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        {photoUrl ? (
+          <a href={photoUrl} target="_blank" rel="noreferrer">
+            <img
+              src={photoUrl}
+              alt={alt}
+              style={{ display: 'block', width: '100%', height: '180px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+            />
+          </a>
+        ) : (
+          <div style={{ height: '180px', display: 'grid', placeItems: 'center', color: '#666', background: '#f4f6f9', borderRadius: '4px' }}>
+            Photo not available
+          </div>
+        )}
+      </div>
+    );
+  };
 
+  const renderRequestDetails = (req, includeComplaintPhoto = true) => {
     return (
       <div>
         <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
@@ -196,16 +216,9 @@ function App() {
             <p style={{ margin: '3px 0' }}>Technician mobile: {req.assignedMobile || 'N/A'}</p>
           </>
         )}
-        {photoUrl && (
+        {includeComplaintPhoto && req.photo && (
           <div style={{ margin: '8px 0' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
-            <a href={photoUrl} target="_blank" rel="noreferrer">
-              <img
-                src={photoUrl}
-                alt={`Complaint photo for ${req.requestId}`}
-                style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
-              />
-            </a>
+            {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
           </div>
         )}
       </div>
@@ -504,25 +517,17 @@ function App() {
                   <strong>{req.requestId} - {req.category}</strong>
                   <b style={{ color: '#198754' }}>Completed</b>
                 </div>
-                {renderRequestDetails(req)}
+                {renderRequestDetails(req, false)}
                 <p style={{ margin: '3px 0' }}>Completed by: {req.assignedName || 'N/A'}</p>
                 <p style={{ margin: '3px 0' }}>Completer mobile: {req.assignedMobile || 'N/A'}</p>
                 <p style={{ margin: '3px 0' }}>
                   Completed at: {req.completedAt ? new Date(req.completedAt).toLocaleString() : 'N/A'}
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
-                {req.completionPhoto && (
-                  <div style={{ margin: '8px 0' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Completed Work Photo</div>
-                    <a href={getPhotoUrl(req.completionPhoto)} target="_blank" rel="noreferrer">
-                      <img
-                        src={getPhotoUrl(req.completionPhoto)}
-                        alt={`Completed work for ${req.requestId}`}
-                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
-                      />
-                    </a>
-                  </div>
-                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px', marginTop: '8px' }}>
+                  {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
+                  {renderPhoto('Completed Work Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
+                </div>
               </div>
             ))}
           </div>
