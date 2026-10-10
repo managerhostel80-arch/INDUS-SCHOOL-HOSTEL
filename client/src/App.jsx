@@ -179,9 +179,7 @@ function App() {
   };
 
   const renderRequestDetails = (req) => {
-    const photoUrl = req.photo
-      ? (req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`)
-      : null;
+    const photoUrl = getPhotoUrl(req.photo);
 
     return (
       <div>
@@ -226,6 +224,9 @@ function App() {
     counts[request.status] = (counts[request.status] || 0) + 1;
     return counts;
   }, {});
+  const getPhotoUrl = (photo) => (
+    photo ? (photo.startsWith('http') ? photo : `https://indus-school-hostel.onrender.com${photo}`) : null
+  );
 
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
@@ -495,10 +496,33 @@ function App() {
         {activeTab === 'completed-status' && (
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs</h3>
-            {completedJobs.map(req => (
+            {completedJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No completed complaints.</p>
+            ) : completedJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <strong>{req.requestId} - {req.category}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>{req.requestId} - {req.category}</strong>
+                  <b style={{ color: '#198754' }}>Completed</b>
+                </div>
                 {renderRequestDetails(req)}
+                <p style={{ margin: '3px 0' }}>Completed by: {req.assignedName || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>Completer mobile: {req.assignedMobile || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>
+                  Completed at: {req.completedAt ? new Date(req.completedAt).toLocaleString() : 'N/A'}
+                </p>
+                {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
+                {req.completionPhoto && (
+                  <div style={{ margin: '8px 0' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Completed Work Photo</div>
+                    <a href={getPhotoUrl(req.completionPhoto)} target="_blank" rel="noreferrer">
+                      <img
+                        src={getPhotoUrl(req.completionPhoto)}
+                        alt={`Completed work for ${req.requestId}`}
+                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                      />
+                    </a>
+                  </div>
+                )}
               </div>
             ))}
           </div>
