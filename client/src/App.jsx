@@ -322,6 +322,29 @@ function App() {
                   </div>
                   <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
                   <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+                  <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+                  <p style={{ margin: '3px 0' }}>Mobile: {req.reportedByMobile || 'N/A'}</p>
+                  <p style={{ margin: '3px 0' }}>
+                    Reported at: {req.reportedAt ? new Date(req.reportedAt).toLocaleString() : 'N/A'}
+                  </p>
+                  {req.photo ? (
+                    <div style={{ margin: '8px 0' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+                      <a
+                        href={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          src={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                          alt={`Complaint photo for ${req.requestId}`}
+                          style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                        />
+                      </a>
+                    </div>
+                  ) : (
+                    <p style={{ margin: '3px 0', color: '#666' }}>No complaint photo attached.</p>
+                  )}
                   <input type="text" placeholder="Tech Name" value={tech.name} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, name: e.target.value }})} style={{...inputStyle, margin: '4px 0'}} />
                   <input type="tel" placeholder="Tech Mobile" value={tech.mobile} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, mobile: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                   <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
