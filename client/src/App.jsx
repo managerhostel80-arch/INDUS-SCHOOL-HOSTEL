@@ -97,8 +97,12 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
+      if (!itemComp.completionPhoto) {
+        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
+        return;
+      }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
-      if (itemComp.completionPhoto) data.append('completionPhoto', itemComp.completionPhoto);
+      data.append('completionPhoto', itemComp.completionPhoto);
     }
 
     try {
@@ -452,14 +456,36 @@ function App() {
         {/* COMPLETION TAB */}
         {activeTab === 'electrician-completion' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completion</h3>
-            {inProgressJobs.map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complete Complaints</h3>
+            {inProgressJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints are currently in progress.</p>
+            ) : inProgressJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <strong>{req.requestId} - {req.category}</strong>
                 {renderRequestDetails(req)}
-                <input type="file" accept="image/*" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})} style={{...inputStyle, margin: '4px 0'}} />
+                <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '8px' }}>
+                  Upload photo of completed work (required)
+                </label>
+                <input
+                  id={`completion-photo-${req._id}`}
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
+                  style={{...inputStyle, margin: '4px 0'}}
+                />
+                {completionData[req._id]?.completionPhoto && (
+                  <p style={{ margin: '0 0 6px', color: '#198754' }}>
+                    Selected: {completionData[req._id].completionPhoto.name}
+                  </p>
+                )}
                 <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                <button onClick={() => updateStatus(req._id, 'Completed', true)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Mark Done</button>
+                <button
+                  onClick={() => updateStatus(req._id, 'Completed', true)}
+                  disabled={!completionData[req._id]?.completionPhoto}
+                  style={{ width: '100%', padding: '8px', background: completionData[req._id]?.completionPhoto ? '#198754' : '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: completionData[req._id]?.completionPhoto ? 'pointer' : 'not-allowed' }}
+                >
+                  Mark Done
+                </button>
               </div>
             ))}
           </div>
