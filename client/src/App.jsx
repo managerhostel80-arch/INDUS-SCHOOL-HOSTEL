@@ -188,6 +188,12 @@ function App() {
         <p style={{ margin: '3px 0' }}>
           Reported at: {req.reportedAt ? new Date(req.reportedAt).toLocaleString() : 'N/A'}
         </p>
+        {(req.assignedName || req.assignedMobile) && (
+          <>
+            <p style={{ margin: '3px 0' }}>Assigned to: {req.assignedName || 'N/A'}</p>
+            <p style={{ margin: '3px 0' }}>Technician mobile: {req.assignedMobile || 'N/A'}</p>
+          </>
+        )}
         {photoUrl && (
           <div style={{ margin: '8px 0' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
@@ -212,6 +218,10 @@ function App() {
   const acceptedJobs = requests.filter(r => r.status === 'Accepted');
   const inProgressJobs = requests.filter(r => r.status === 'In Progress');
   const completedJobs = requests.filter(r => r.status === 'Completed');
+  const requestStatusCounts = filteredRequests.reduce((counts, request) => {
+    counts[request.status] = (counts[request.status] || 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
@@ -366,12 +376,32 @@ function App() {
         {/* REQUESTS LIST TAB */}
         {activeTab === 'dashboard' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>All Requests</h3>
-            {filteredRequests.map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>
+              All Requests ({filteredRequests.length})
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px', marginBottom: '10px' }}>
+              {[
+                ['New', '#fff3cd', '#664d03'],
+                ['Accepted', '#cfe2ff', '#084298'],
+                ['In Progress', '#e2f0d9', '#276749'],
+                ['Completed', '#d1e7dd', '#0f5132']
+              ].map(([status, background, color]) => (
+                <div key={status} style={{ background, color, padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{status.toUpperCase()}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{requestStatusCounts[status] || 0}</div>
+                </div>
+              ))}
+            </div>
+            {filteredRequests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
+            ) : filteredRequests.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <strong>{req.requestId} - {req.category}</strong>
-                  <span><b>{req.status}</b></span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {getUrgencyBadge(req.urgencyLevel)}
+                    <b>{req.status}</b>
+                  </span>
                 </div>
                 {renderRequestDetails(req)}
               </div>
