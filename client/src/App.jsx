@@ -34,24 +34,27 @@ function App() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('https://indus-school-hostel.onrender.com/api/requests');
-      const result = await res.json();
-      if (result.success) {
-        setRequests(result.data);
-        setStats(result.stats);
-        if (result.data.length > 0 && !submittedRequest) {
-          setSubmittedRequest(result.data[0]);
+      const [requestsRes, teamRes, dbRes] = await Promise.all([
+        fetch('https://indus-school-hostel.onrender.com/api/requests'),
+        fetch('https://indus-school-hostel.onrender.com/api/team'),
+        fetch('https://indus-school-hostel.onrender.com/api/db/stats').catch(() => null)
+      ]);
+
+      const requestsResult = requestsRes ? await requestsRes.json() : null;
+      if (requestsResult?.success) {
+        setRequests(requestsResult.data);
+        setStats(requestsResult.stats);
+        if (Array.isArray(requestsResult.data) && requestsResult.data.length > 0) {
+          setSubmittedRequest(prev => prev ?? requestsResult.data[0]);
         }
       }
 
-      const teamRes = await fetch('https://indus-school-hostel.onrender.com/api/team');
-      const teamResult = await teamRes.json();
-      if (teamResult.success) setTeam(teamResult.data);
+      const teamResult = teamRes ? await teamRes.json() : null;
+      if (teamResult?.success) setTeam(teamResult.data);
 
-      const dbRes = await fetch('https://indus-school-hostel.onrender.com/api/db/stats').catch(() => null);
       if (dbRes) {
         const dbResult = await dbRes.json();
-        if (dbResult.success) setDbStats(dbResult.stats);
+        if (dbResult?.success) setDbStats(dbResult.stats);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -79,7 +82,7 @@ function App() {
         setSubmittedRequest(result.data);
         setActiveTab('success-screen');
         setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
-        fetchData();
+        await fetchData();
       }
     } catch (err) {
       console.error('Submission error:', err);
@@ -103,7 +106,7 @@ function App() {
         method: 'PATCH',
         body: data
       });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Update status error:', err);
     }
@@ -126,7 +129,7 @@ function App() {
       if (result.success) {
         setEditingMemberId(null);
         setTeamForm({ category: 'Electrical', personName: '', mobileNumber: '', active: true });
-        fetchData();
+        await fetchData();
         setActiveTab('team-directory-screen9');
       }
     } catch (err) {
@@ -138,7 +141,7 @@ function App() {
     if (!window.confirm('Are you sure you want to delete this employee?')) return;
     try {
       await fetch(`https://indus-school-hostel.onrender.com/api/team/${id}`, { method: 'DELETE' });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Error deleting team member:', err);
     }
@@ -151,7 +154,7 @@ function App() {
       const result = await res.json();
       if (result.success) {
         alert(result.message);
-        fetchData();
+        await fetchData();
       }
     } catch (err) {
       console.error('Error clearing database:', err);
@@ -184,12 +187,12 @@ function App() {
     <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Header with School Name */}
-      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box' }}>
-        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold' }}>Montessori Indus Residential School</h2>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal' }}>Hostel 360 – Maintenance System</h3>
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center' }}>Montessori Indus Residential School</h2>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>Hostel 360 – Maintenance System</h3>
         
         {/* Navigation Tabs Bar */}
-        <div className="app-nav-tabs" style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '4px', width: '100%' }}>
+        <div className="app-nav-tabs" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'center', overflowX: 'hidden', paddingBottom: '4px', width: '100%' }}>
           <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Dashboard</button>
           <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report</button>
           <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New ({newComplaintJobs.length})</button>
