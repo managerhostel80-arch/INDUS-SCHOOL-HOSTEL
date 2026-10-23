@@ -178,24 +178,24 @@ function App() {
     );
   };
 
-  const renderPhoto = (label, photo, alt) => {
+  const renderPhoto = (label, photo, alt, showLabel = true) => {
     const photoUrl = getPhotoUrl(photo);
     return (
       <div style={{ minWidth: 0, width: 'fit-content', maxWidth: '320px' }}>
+        {showLabel && <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{label}</div>}
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer">
             <img
               src={photoUrl}
               alt={alt}
-              style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '4px' }}
+              style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '180px', objectFit: 'contain' }}
             />
           </a>
         ) : (
-          <div style={{ width: '240px', maxWidth: '100%', height: '180px', display: 'grid', placeItems: 'center', color: '#666', background: '#f4f6f9', borderRadius: '4px' }}>
+          <span style={{ color: '#666' }}>
             Photo not available
-          </div>
+          </span>
         )}
-        <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{label}</div>
       </div>
     );
   };
@@ -526,7 +526,7 @@ function App() {
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
                 <div className="completed-photo-grid">
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
-                  {renderPhoto('Completed Work Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
+                  {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
               </div>
             ))}
