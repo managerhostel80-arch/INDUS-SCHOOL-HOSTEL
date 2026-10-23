@@ -51,15 +51,15 @@ body {
 }
 
 .completed-photo-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 320px));
-  gap: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
   margin-top: 8px;
 }
 
 @media (max-width: 700px) {
   .completed-photo-grid {
-    grid-template-columns: minmax(0, 320px);
+    flex-wrap: wrap;
   }
 
   .app-header {

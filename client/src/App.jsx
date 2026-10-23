@@ -181,17 +181,17 @@ function App() {
   const renderPhoto = (label, photo, alt) => {
     const photoUrl = getPhotoUrl(photo);
     return (
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, width: 'fit-content', maxWidth: '320px' }}>
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer">
             <img
               src={photoUrl}
               alt={alt}
-              style={{ display: 'block', width: '100%', height: '180px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+              style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '4px' }}
             />
           </a>
         ) : (
-          <div style={{ height: '180px', display: 'grid', placeItems: 'center', color: '#666', background: '#f4f6f9', borderRadius: '4px' }}>
+          <div style={{ width: '240px', maxWidth: '100%', height: '180px', display: 'grid', placeItems: 'center', color: '#666', background: '#f4f6f9', borderRadius: '4px' }}>
             Photo not available
           </div>
         )}
