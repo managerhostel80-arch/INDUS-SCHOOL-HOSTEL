@@ -1,6 +1,10 @@
 const MaintenanceRequest = require('../models/Request');
 const pushNotifications = require('../services/pushNotifications');
 
+const getUploadedPhotoUrl = (file) => (
+  file?.path?.startsWith('http') ? file.path : file ? `/uploads/${file.filename}` : ''
+);
+
 // Get all maintenance requests and dashboard stats
 exports.getRequests = async (req, res) => {
   try {
@@ -36,7 +40,7 @@ exports.createRequest = async (req, res) => {
       return res.status(400).json({ success: false, error: 'A valid urgency level is required.' });
     }
     
-    const photo = req.file ? `/uploads/${req.file.filename}` : '';
+    const photo = getUploadedPhotoUrl(req.file);
     const count = await MaintenanceRequest.countDocuments();
     const requestId = `MNT-${String(count + 1).padStart(5, '0')}`;
 
@@ -73,7 +77,7 @@ exports.updateRequestStatus = async (req, res) => {
     if (assignedMobile) updateData.assignedMobile = assignedMobile;
     if (remarks) updateData.remarks = remarks;
     if (req.file) {
-      updateData.completionPhoto = `/uploads/${req.file.filename}`;
+      updateData.completionPhoto = getUploadedPhotoUrl(req.file);
     }
     if (status === 'Completed') {
       updateData.completedAt = new Date();
