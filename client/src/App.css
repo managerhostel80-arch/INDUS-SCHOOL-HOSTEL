@@ -57,11 +57,12 @@ body {
   margin-top: 8px;
 }
 
-@media (max-width: 700px) {
-  .completed-photo-grid {
-    flex-wrap: wrap;
-  }
+.completed-photo-grid > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
 
+@media (max-width: 700px) {
   .app-header {
     padding: 8px !important;
   }
