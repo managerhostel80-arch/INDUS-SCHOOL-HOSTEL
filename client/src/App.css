@@ -50,6 +50,13 @@ body {
   min-width: 90px;
 }
 
+.completed-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
 @media (max-width: 700px) {
   .app-header {
     padding: 8px !important;
@@ -109,6 +116,10 @@ body {
 }
 
 @media (max-width: 420px) {
+  .completed-photo-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .app-nav-tabs button {
     flex: 1 1 calc(50% - 4px) !important;
   }

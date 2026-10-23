@@ -182,7 +182,6 @@ function App() {
     const photoUrl = getPhotoUrl(photo);
     return (
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer">
             <img
@@ -196,6 +195,7 @@ function App() {
             Photo not available
           </div>
         )}
+        <div style={{ fontWeight: 'bold', marginTop: '4px' }}>{label}</div>
       </div>
     );
   };
@@ -524,7 +524,7 @@ function App() {
                   Completed at: {req.completedAt ? new Date(req.completedAt).toLocaleString() : 'N/A'}
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px', marginTop: '8px' }}>
+                <div className="completed-photo-grid">
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Work Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
