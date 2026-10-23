@@ -20,6 +20,23 @@ VAPID_SUBJECT=mailto:<an email address you control>
 
 Keep `VAPID_PRIVATE_KEY` secret. Do not commit or share the server `.env` file.
 
+## Store complaint photos permanently
+
+The server uses Cloudinary for new complaint and completion photos when all three
+Cloudinary values are configured. Create a Cloudinary account, then add these
+environment variables to the backend service on Render:
+
+```dotenv
+CLOUDINARY_CLOUD_NAME=<cloud name>
+CLOUDINARY_API_KEY=<API key>
+CLOUDINARY_API_SECRET=<API secret>
+```
+
+Keep `CLOUDINARY_API_SECRET` private. Redeploy the backend after setting the
+values. New photos will be saved as public Cloudinary URLs. Existing photos that
+already return 404 must be uploaded again; this change cannot restore files that
+are no longer present on the server.
+
 ## Configure hosting
 
 - Host the client on an HTTPS URL and the API on a publicly reachable HTTPS URL. A phone cannot use `localhost` to reach a server running on a different computer.
