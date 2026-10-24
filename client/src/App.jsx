@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
+const API_BASE_URL = 'https://indus-school-hostel.onrender.com';
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from(rawData, character => character.charCodeAt(0));
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState('admin-dashboard');
   const [requests, setRequests] = useState([]);
@@ -31,6 +40,8 @@ function App() {
   });
 
   const [dbStats, setDbStats] = useState({ requests: 0, teamMembers: 0 });
+  const [pushStatus, setPushStatus] = useState('');
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -65,6 +76,56 @@ function App() {
     fetchData();
   }, []);
 
+  const handleEnableNotifications = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      setPushStatus('Notifications are not supported in this browser.');
+      return;
+    }
+
+    setIsEnablingPush(true);
+    setPushStatus('');
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushStatus('Allow notifications in your browser settings to receive complaint alerts.');
+        return;
+      }
+
+      const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
+      const keyResult = await keyResponse.json();
+      if (!keyResponse.ok || !keyResult.success) {
+        throw new Error(keyResult.error || 'Could not load notification settings.');
+      }
+
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(keyResult.publicKey)
+        });
+      }
+
+      const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription.toJSON())
+      });
+      const subscribeResult = await subscribeResponse.json();
+      if (!subscribeResponse.ok || !subscribeResult.success) {
+        throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
+      }
+
+      setPushStatus('Notifications enabled on this device.');
+    } catch (err) {
+      console.error('Unable to enable notifications:', err);
+      setPushStatus(err.message || 'Could not enable notifications on this device.');
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
   const handleReportSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
@@ -78,12 +139,15 @@ function App() {
         body: data
       });
       const result = await res.json();
-      if (result.success) {
-        setSubmittedRequest(result.data);
-        setActiveTab('success-screen');
-        setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
-        await fetchData();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not submit the complaint.');
+        return;
       }
+
+      setSubmittedRequest(result.data);
+      setActiveTab('success-screen');
+      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
+      await fetchData();
     } catch (err) {
       console.error('Submission error:', err);
     }
@@ -106,10 +170,16 @@ function App() {
     }
 
     try {
-      await fetch(`https://indus-school-hostel.onrender.com/api/requests/${id}`, {
+      const res = await fetch(`https://indus-school-hostel.onrender.com/api/requests/${id}`, {
         method: 'PATCH',
         body: data
       });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not update the request.');
+        return;
+      }
+
       await fetchData();
     } catch (err) {
       console.error('Update status error:', err);
@@ -260,6 +330,17 @@ function App() {
           <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Done</button>
           <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Team</button>
           <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Settings</button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+          <button
+            type="button"
+            onClick={handleEnableNotifications}
+            disabled={isEnablingPush}
+            style={{ padding: '6px 10px', border: '1px solid white', borderRadius: '4px', background: 'white', color: '#084298', fontSize: '11px', fontWeight: 'bold', cursor: isEnablingPush ? 'wait' : 'pointer' }}
+          >
+            {isEnablingPush ? 'Enabling...' : 'Enable notifications'}
+          </button>
+          {pushStatus && <span role="status" style={{ fontSize: '11px', color: 'white' }}>{pushStatus}</span>}
         </div>
       </header>
 
