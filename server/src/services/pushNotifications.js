@@ -23,6 +23,11 @@ exports.notifyNewRequest = async (request) => {
   }
 
   const subscriptions = await PushSubscription.find();
+  if (subscriptions.length === 0) {
+    console.info('Push notifications were not sent: no devices are subscribed.');
+    return;
+  }
+
   const payload = JSON.stringify({
     title: 'New maintenance complaint',
     body: `${request.requestId}: ${request.category} — ${request.location}`,
@@ -35,14 +40,20 @@ exports.notifyNewRequest = async (request) => {
         endpoint: subscription.endpoint,
         keys: subscription.keys
       }, payload);
+      return true;
     } catch (err) {
       if (err.statusCode === 404 || err.statusCode === 410) {
         await PushSubscription.deleteOne({ _id: subscription._id });
-        return;
+        return false;
       }
       throw err;
     }
   }));
+
+  const deliveredCount = results.filter(
+    result => result.status === 'fulfilled' && result.value
+  ).length;
+  console.info(`Push notification delivery completed: ${deliveredCount}/${subscriptions.length} devices accepted the notification.`);
 
   results.forEach((result, index) => {
     if (result.status === 'rejected') {
