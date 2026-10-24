@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const requestController = require('../controllers/requestController');
-const upload = require('../middleware/upload');
+const { upload, requirePersistentPhotoStorage } = require('../middleware/upload');
 
 // GET all requests
 router.get('/', requestController.getRequests);
 
 // POST create request
-router.post('/', upload.single('photo'), requestController.createRequest);
+router.post('/', requirePersistentPhotoStorage, upload.single('photo'), requestController.createRequest);
 
 // PATCH update status/details
-router.patch('/:id', upload.single('completionPhoto'), requestController.updateRequestStatus);
+router.patch('/:id', requirePersistentPhotoStorage, upload.single('completionPhoto'), requestController.updateRequestStatus);
 
 // DELETE requests with a specific status
 router.delete('/status/:status', requestController.deleteRequestsByStatus);
