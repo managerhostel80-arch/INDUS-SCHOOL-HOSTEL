@@ -11,6 +11,17 @@ const cloudinaryConfig = {
 };
 const hasCloudinaryConfig = Object.values(cloudinaryConfig).every(Boolean);
 
+const requirePersistentPhotoStorage = (req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !hasCloudinaryConfig) {
+    return res.status(503).json({
+      success: false,
+      error: 'Photo uploads are unavailable until Cloudinary is configured.'
+    });
+  }
+
+  next();
+};
+
 let storage;
 if (hasCloudinaryConfig) {
   cloudinary.config(cloudinaryConfig);
@@ -53,4 +64,4 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // Limit image size to 5MB
 });
 
-module.exports = upload;
+module.exports = { upload, requirePersistentPhotoStorage };
