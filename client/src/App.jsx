@@ -431,17 +431,21 @@ function App() {
         <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>Hostel 360 – Maintenance System</h3>
         
         {/* Navigation Tabs Bar */}
-        <div className="app-nav-tabs" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'center', overflowX: 'hidden', paddingBottom: '4px', width: '100%' }}>
-          <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
-          <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
-          <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
-          <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
-          <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>In Progress</button>
-          <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete Work</button>
-          <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
-          <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Maintenance Team</button>
-          <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
-        </div>
+        <nav className="app-nav-tabs" aria-label="Main navigation">
+          <div className="app-nav-row app-nav-row-primary">
+            <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
+            <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
+            <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
+            <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
+            <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>In Progress</button>
+            <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete Work</button>
+            <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
+          </div>
+          <div className="app-nav-row app-nav-row-secondary">
+            <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Maintenance Team</button>
+            <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
+          </div>
+        </nav>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
           <button
             type="button"

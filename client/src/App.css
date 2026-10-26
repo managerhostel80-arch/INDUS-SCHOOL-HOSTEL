@@ -24,15 +24,26 @@ body {
 
 .app-nav-tabs {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   gap: 5px;
   width: 100%;
-  overflow: visible;
 }
 
-.app-nav-tabs button {
-  flex: 1 1 110px;
+.app-nav-row {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app-nav-row-primary {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.app-nav-row-secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app-nav-row button {
   min-width: 0;
 }
 
@@ -78,13 +89,21 @@ body {
 
   .app-nav-tabs {
     gap: 4px !important;
-    flex-wrap: wrap;
-    overflow-x: hidden !important;
   }
 
-  .app-nav-tabs button {
-    flex: 1 1 calc(33.33% - 4px) !important;
-    min-width: 0;
+  .app-nav-row {
+    gap: 4px !important;
+  }
+
+  .app-nav-row-primary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .app-nav-row-secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app-nav-row button {
     padding: 6px 7px !important;
     font-size: 10px !important;
   }
@@ -121,8 +140,8 @@ body {
 }
 
 @media (max-width: 420px) {
-  .app-nav-tabs button {
-    flex: 1 1 calc(50% - 4px) !important;
+  .app-nav-row-primary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .dashboard-stats {
