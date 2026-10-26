@@ -56,8 +56,22 @@ exports.notifyNewRequest = async (request) => {
   console.info(`Push notification delivery completed: ${deliveredCount}/${subscriptions.length} devices accepted the notification.`);
 
   results.forEach((result, index) => {
+    const subscription = subscriptions[index];
+    const userAgent = (subscription.userAgent || 'unknown').slice(0, 200);
+
     if (result.status === 'rejected') {
-      console.error(`Push notification failed for subscription ${subscriptions[index]._id}:`, result.reason);
+      console.error(
+        `Push notification failed for subscription ${subscription._id}; user agent: ${userAgent}; status: ${result.reason?.statusCode || 'unknown'}`,
+        result.reason
+      );
+    } else if (result.value) {
+      console.info(
+        `Push notification accepted for subscription ${subscription._id}; user agent: ${userAgent}`
+      );
+    } else {
+      console.warn(
+        `Expired push subscription removed: ${subscription._id}; user agent: ${userAgent}`
+      );
     }
   });
 };
