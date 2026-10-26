@@ -12,6 +12,7 @@ const urlBase64ToUint8Array = (base64String) => {
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(''); // 'admin' or 'user'
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('admin-dashboard');
@@ -82,17 +83,22 @@ function App() {
   const handleLoginSubmit = (event) => {
     event.preventDefault();
 
-    const validCredentials =
-      (loginData.username.trim() === 'admin' && loginData.password === 'hostel360') ||
-      (loginData.username.trim() === 'staff' && loginData.password === 'user123');
+    const username = loginData.username.trim();
+    const password = loginData.password;
 
-    if (!validCredentials) {
+    if (username === 'admin' && password === 'hostel360') {
+      setUserRole('admin');
+      setIsLoggedIn(true);
+      setActiveTab('admin-dashboard');
+      setLoginError('');
+    } else if (username === 'staff' && password === 'user123') {
+      setUserRole('user');
+      setIsLoggedIn(true);
+      setActiveTab('report'); // Default staff to Report a Problem since dashboard is hidden
+      setLoginError('');
+    } else {
       setLoginError('Incorrect username or password. Please try again.');
-      return;
     }
-
-    setLoginError('');
-    setIsLoggedIn(true);
   };
 
   const handleEnableNotifications = async () => {
@@ -417,6 +423,11 @@ function App() {
               Log in
             </button>
           </form>
+
+          <div style={{ marginTop: '16px', fontSize: '12px', color: '#555', background: '#f8f9fa', padding: '10px', borderRadius: '5px', lineHeight: '1.5' }}>
+            <div><b>Admin:</b> admin / hostel360</div>
+            <div><b>Staff User:</b> staff / user123</div>
+          </div>
         </section>
       </main>
     );
@@ -428,12 +439,16 @@ function App() {
       {/* Header with School Name */}
       <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
         <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center' }}>Montessori Indus Residential School</h2>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>Hostel 360 – Maintenance System</h3>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>
+          Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
+        </h3>
         
-        {/* Navigation Tabs Bar */}
+        {/* Navigation Tabs Bar (Role Filtered) */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
           <div className="app-nav-row app-nav-row-primary">
-            <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
+            {userRole === 'admin' && (
+              <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
+            )}
             <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
             <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
             <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
@@ -443,7 +458,9 @@ function App() {
           </div>
           <div className="app-nav-row app-nav-row-secondary">
             <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Maintenance Team</button>
-            <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
+            {userRole === 'admin' && (
+              <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
+            )}
           </div>
         </nav>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
@@ -451,6 +468,7 @@ function App() {
             type="button"
             onClick={() => {
               setIsLoggedIn(false);
+              setUserRole('');
               setLoginData({ username: '', password: '' });
               setActiveTab('admin-dashboard');
             }}
@@ -473,8 +491,8 @@ function App() {
       {/* Main Content Body */}
       <div className="app-main" style={{ padding: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         
-        {/* DASHBOARD TAB */}
-        {activeTab === 'admin-dashboard' && (
+        {/* DASHBOARD TAB (Admin Only) */}
+        {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
             
@@ -771,8 +789,8 @@ function App() {
           </div>
         )}
 
-        {/* SETTINGS TAB */}
-        {activeTab === 'db-management' && (
+        {/* SETTINGS TAB (Admin Only) */}
+        {activeTab === 'db-management' && userRole === 'admin' && (
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b> | Team: <b>{dbStats.teamMembers}</b></p>
@@ -784,7 +802,7 @@ function App() {
         {activeTab === 'success-screen' && (
           <div style={{ background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
             <h3 style={{ color: '#198754', margin: '0 0 10px 0', fontSize: '16px' }}>Successfully Submitted!</h3>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Back to Dashboard</button>
+            <button onClick={() => setActiveTab(userRole === 'admin' ? 'admin-dashboard' : 'report')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Continue</button>
           </div>
         )}
 
