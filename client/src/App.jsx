@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import './App.css';
+
+const API_BASE_URL = 'https://indus-school-hostel.onrender.com';
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from(rawData, character => character.charCodeAt(0));
+};
 
 function App() {
-  // Authentication & Role State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState(''); // 'admin' or 'user'
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   const [loginError, setLoginError] = useState('');
-
   const [activeTab, setActiveTab] = useState('admin-dashboard');
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
@@ -36,27 +43,32 @@ function App() {
   });
 
   const [dbStats, setDbStats] = useState({ requests: 0, teamMembers: 0 });
+  const [pushStatus, setPushStatus] = useState('');
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
 
   const fetchData = async () => {
     try {
-      const res = await fetch('https://indus-school-hostel.onrender.com/api/requests');
-      const result = await res.json();
-      if (result.success) {
-        setRequests(result.data);
-        setStats(result.stats);
-        if (result.data.length > 0 && !submittedRequest) {
-          setSubmittedRequest(result.data[0]);
+      const [requestsRes, teamRes, dbRes] = await Promise.all([
+        fetch('https://indus-school-hostel.onrender.com/api/requests'),
+        fetch('https://indus-school-hostel.onrender.com/api/team'),
+        fetch('https://indus-school-hostel.onrender.com/api/db/stats').catch(() => null)
+      ]);
+
+      const requestsResult = requestsRes ? await requestsRes.json() : null;
+      if (requestsResult?.success) {
+        setRequests(requestsResult.data);
+        setStats(requestsResult.stats);
+        if (Array.isArray(requestsResult.data) && requestsResult.data.length > 0) {
+          setSubmittedRequest(prev => prev ?? requestsResult.data[0]);
         }
       }
 
-      const teamRes = await fetch('https://indus-school-hostel.onrender.com/api/team');
-      const teamResult = await teamRes.json();
-      if (teamResult.success) setTeam(teamResult.data);
+      const teamResult = teamRes ? await teamRes.json() : null;
+      if (teamResult?.success) setTeam(teamResult.data);
 
-      const dbRes = await fetch('https://indus-school-hostel.onrender.com/api/db/stats').catch(() => null);
       if (dbRes) {
         const dbResult = await dbRes.json();
-        if (dbResult.success) setDbStats(dbResult.stats);
+        if (dbResult?.success) setDbStats(dbResult.stats);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -64,25 +76,72 @@ function App() {
   };
 
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchData();
-    }
+    if (isLoggedIn) fetchData();
   }, [isLoggedIn]);
 
-  const handleLoginSubmit = (e) => {
-    e.preventDefault();
-    if (loginData.username === 'admin' && loginData.password === 'hostel360') {
-      setIsLoggedIn(true);
-      setUserRole('admin');
-      setActiveTab('admin-dashboard');
-      setLoginError('');
-    } else if (loginData.username === 'staff' && loginData.password === 'user123') {
-      setIsLoggedIn(true);
-      setUserRole('user');
-      setActiveTab('report'); // Default users to report tab since dashboard is hidden
-      setLoginError('');
-    } else {
-      setLoginError('Invalid Username or Password.');
+  const handleLoginSubmit = (event) => {
+    event.preventDefault();
+
+    const validCredentials =
+      (loginData.username.trim() === 'admin' && loginData.password === 'hostel360') ||
+      (loginData.username.trim() === 'staff' && loginData.password === 'user123');
+
+    if (!validCredentials) {
+      setLoginError('Incorrect username or password. Please try again.');
+      return;
+    }
+
+    setLoginError('');
+    setIsLoggedIn(true);
+  };
+
+  const handleEnableNotifications = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      setPushStatus('Notifications are not supported in this browser.');
+      return;
+    }
+
+    setIsEnablingPush(true);
+    setPushStatus('');
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushStatus('Allow notifications in your browser settings to receive complaint alerts.');
+        return;
+      }
+
+      const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
+      const keyResult = await keyResponse.json();
+      if (!keyResponse.ok || !keyResult.success) {
+        throw new Error(keyResult.error || 'Could not load notification settings.');
+      }
+
+      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(keyResult.publicKey)
+        });
+      }
+
+      const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription.toJSON())
+      });
+      const subscribeResult = await subscribeResponse.json();
+      if (!subscribeResponse.ok || !subscribeResult.success) {
+        throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
+      }
+
+      setPushStatus('Notifications enabled on this device.');
+    } catch (err) {
+      console.error('Unable to enable notifications:', err);
+      setPushStatus(err.message || 'Could not enable notifications on this device.');
+    } finally {
+      setIsEnablingPush(false);
     }
   };
 
@@ -99,12 +158,15 @@ function App() {
         body: data
       });
       const result = await res.json();
-      if (result.success) {
-        setSubmittedRequest(result.data);
-        setActiveTab('success-screen');
-        setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
-        fetchData();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not submit the complaint.');
+        return;
       }
+
+      setSubmittedRequest(result.data);
+      setActiveTab('success-screen');
+      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
+      await fetchData();
     } catch (err) {
       console.error('Submission error:', err);
     }
@@ -118,16 +180,26 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
+      if (!itemComp.completionPhoto) {
+        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
+        return;
+      }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
-      if (itemComp.completionPhoto) data.append('completionPhoto', itemComp.completionPhoto);
+      data.append('completionPhoto', itemComp.completionPhoto);
     }
 
     try {
-      await fetch(`https://indus-school-hostel.onrender.com/api/requests/${id}`, {
+      const res = await fetch(`https://indus-school-hostel.onrender.com/api/requests/${id}`, {
         method: 'PATCH',
         body: data
       });
-      fetchData();
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not update the request.');
+        return;
+      }
+
+      await fetchData();
     } catch (err) {
       console.error('Update status error:', err);
     }
@@ -150,7 +222,7 @@ function App() {
       if (result.success) {
         setEditingMemberId(null);
         setTeamForm({ category: 'Electrical', personName: '', mobileNumber: '', active: true });
-        fetchData();
+        await fetchData();
         setActiveTab('team-directory-screen9');
       }
     } catch (err) {
@@ -162,7 +234,7 @@ function App() {
     if (!window.confirm('Are you sure you want to delete this employee?')) return;
     try {
       await fetch(`https://indus-school-hostel.onrender.com/api/team/${id}`, { method: 'DELETE' });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Error deleting team member:', err);
     }
@@ -175,7 +247,7 @@ function App() {
       const result = await res.json();
       if (result.success) {
         alert(result.message);
-        fetchData();
+        await fetchData();
       }
     } catch (err) {
       console.error('Error clearing database:', err);
@@ -195,6 +267,53 @@ function App() {
     );
   };
 
+  const renderPhoto = (label, photo, alt, showLabel = true) => {
+    const photoUrl = getPhotoUrl(photo);
+    return (
+      <div style={{ minWidth: 0, width: 'fit-content', maxWidth: '320px' }}>
+        {showLabel && <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{label}</div>}
+        {photoUrl ? (
+          <a href={photoUrl} target="_blank" rel="noreferrer">
+            <img
+              src={photoUrl}
+              alt={alt}
+              style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '180px', objectFit: 'contain' }}
+            />
+          </a>
+        ) : (
+          <span style={{ color: '#666' }}>
+            Photo not available
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const renderRequestDetails = (req, includeComplaintPhoto = true) => {
+    return (
+      <div>
+        <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
+        <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+        <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+        <p style={{ margin: '3px 0' }}>Mobile: {req.reportedByMobile || 'N/A'}</p>
+        <p style={{ margin: '3px 0' }}>
+          Reported at: {req.reportedAt ? new Date(req.reportedAt).toLocaleString() : 'N/A'}
+        </p>
+        {(req.assignedName || req.assignedMobile) && (
+          <>
+            <p style={{ margin: '3px 0' }}>Assigned to: {req.assignedName || 'N/A'}</p>
+            <p style={{ margin: '3px 0' }}>Technician mobile: {req.assignedMobile || 'N/A'}</p>
+          </>
+        )}
+        {includeComplaintPhoto && req.photo && (
+          <div style={{ margin: '8px 0' }}>
+            {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const filteredRequests = filterCategory === 'All' 
     ? requests 
     : requests.filter(r => r.category === filterCategory);
@@ -203,51 +322,103 @@ function App() {
   const acceptedJobs = requests.filter(r => r.status === 'Accepted');
   const inProgressJobs = requests.filter(r => r.status === 'In Progress');
   const completedJobs = requests.filter(r => r.status === 'Completed');
+  const requestStatusCounts = filteredRequests.reduce((counts, request) => {
+    counts[request.status] = (counts[request.status] || 0) + 1;
+    return counts;
+  }, {});
+  const getPhotoUrl = (photo) => (
+    photo ? (photo.startsWith('http') ? photo : `https://indus-school-hostel.onrender.com${photo}`) : null
+  );
 
-  // IF NOT LOGGED IN, SHOW LOGIN SCREEN
   if (!isLoggedIn) {
     return (
-      <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px', boxSizing: 'border-box' }}>
-        <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '100%', maxWidth: '380px', boxSizing: 'border-box' }}>
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <h2 style={{ margin: '0 0 5px 0', fontSize: '16px', color: '#0d6efd', fontWeight: 'bold' }}>Montessori Indus Residential School</h2>
-            <h3 style={{ margin: 0, fontSize: '14px', color: '#333', fontWeight: 'normal' }}>Hostel 360 – Maintenance System</h3>
-          </div>
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          boxSizing: 'border-box',
+          background: '#f4f6f9',
+          fontFamily: 'Arial, sans-serif'
+        }}
+      >
+        <section
+          style={{
+            width: '100%',
+            maxWidth: '400px',
+            padding: '28px',
+            boxSizing: 'border-box',
+            borderRadius: '10px',
+            background: '#fff',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)'
+          }}
+        >
+          <header style={{ marginBottom: '24px', textAlign: 'center' }}>
+            <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: '22px' }}>
+              Montessori Indus Residential School
+            </h1>
+            <p style={{ margin: 0, color: '#555', fontSize: '15px' }}>
+              Hostel 360 – Maintenance System
+            </p>
+          </header>
 
-          <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#333' }}>Username</label>
-              <input 
-                type="text" 
-                placeholder="Enter username" 
-                value={loginData.username} 
-                onChange={e => setLoginData({...loginData, username: e.target.value})} 
-                required 
-                style={inputStyle} 
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#333' }}>Password</label>
-              <input 
-                type="password" 
-                placeholder="Enter password" 
-                value={loginData.password} 
-                onChange={e => setLoginData({...loginData, password: e.target.value})} 
-                required 
-                style={inputStyle} 
-              />
-            </div>
-            {loginError && <p style={{ color: '#dc3545', fontSize: '11px', margin: '0', textAlign: 'center' }}>{loginError}</p>}
-            <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', marginTop: '5px' }}>
-              Login
+          <form onSubmit={handleLoginSubmit}>
+            <label htmlFor="login-username" style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
+              Username
+            </label>
+            <input
+              id="login-username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              required
+              value={loginData.username}
+              onChange={event => setLoginData({ ...loginData, username: event.target.value })}
+              style={loginInputStyle}
+            />
+
+            <label htmlFor="login-password" style={{ display: 'block', margin: '16px 0 6px', fontWeight: 'bold' }}>
+              Password
+            </label>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={loginData.password}
+              onChange={event => setLoginData({ ...loginData, password: event.target.value })}
+              style={loginInputStyle}
+            />
+
+            {loginError && (
+              <p role="alert" style={{ margin: '12px 0 0', color: '#b91c1c', fontSize: '14px' }}>
+                {loginError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                marginTop: '20px',
+                padding: '12px',
+                border: 0,
+                borderRadius: '5px',
+                background: '#1d4ed8',
+                color: '#fff',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Log in
             </button>
           </form>
-          <div style={{ marginTop: '15px', fontSize: '11px', color: '#666', background: '#f8f9fa', padding: '8px', borderRadius: '4px' }}>
-            <div><b>Admin:</b> admin / hostel360</div>
-            <div><b>User/Staff:</b> staff / user123</div>
-          </div>
-        </div>
-      </div>
+        </section>
+      </main>
     );
   }
 
@@ -255,46 +426,55 @@ function App() {
     <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Header with School Name */}
-      <header style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-          <div>
-            <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold' }}>Montessori Indus Residential School</h2>
-            <h3 style={{ margin: '0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal' }}>Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})</h3>
-          </div>
-          <button onClick={() => setIsLoggedIn(false)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '5px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer', flexShrink: 0 }}>
-            Logout
-          </button>
-        </div>
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center' }}>Montessori Indus Residential School</h2>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>Hostel 360 – Maintenance System</h3>
         
-        {/* Navigation Tabs Bar (Role-filtered) */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '6px', width: '100%' }}>
-          {userRole === 'admin' && (
-            <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Dashboard</button>
-          )}
-          <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report Issue</button>
-          <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New ({newComplaintJobs.length})</button>
+        {/* Navigation Tabs Bar */}
+        <div className="app-nav-tabs" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'center', overflowX: 'hidden', paddingBottom: '4px', width: '100%' }}>
+          <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
+          <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
+          <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
           <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
           <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>In Progress</button>
-          <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Mark Complete</button>
-          <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed Jobs</button>
-          {userRole === 'admin' && (
-            <>
-              <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Staff Team</button>
-              <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Settings</button>
-            </>
-          )}
+          <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete Work</button>
+          <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
+          <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Maintenance Team</button>
+          <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsLoggedIn(false);
+              setLoginData({ username: '', password: '' });
+              setActiveTab('admin-dashboard');
+            }}
+            style={{ padding: '6px 10px', border: 0, borderRadius: '4px', background: '#dc3545', color: 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            Log out
+          </button>
+          <button
+            type="button"
+            onClick={handleEnableNotifications}
+            disabled={isEnablingPush}
+            style={{ padding: '6px 10px', border: '1px solid white', borderRadius: '4px', background: 'white', color: '#084298', fontSize: '11px', fontWeight: 'bold', cursor: isEnablingPush ? 'wait' : 'pointer' }}
+          >
+            {isEnablingPush ? 'Enabling...' : 'Enable notifications'}
+          </button>
+          {pushStatus && <span role="status" style={{ fontSize: '11px', color: 'white' }}>{pushStatus}</span>}
         </div>
       </header>
 
       {/* Main Content Body */}
-      <div style={{ padding: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div className="app-main" style={{ padding: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         
-        {/* DASHBOARD TAB (Admin Only) */}
-        {activeTab === 'admin-dashboard' && userRole === 'admin' && (
-          <div>
+        {/* DASHBOARD TAB */}
+        {activeTab === 'admin-dashboard' && (
+          <div className="dashboard-overview">
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
               <div onClick={() => setActiveTab('new-complaint-view')} style={{ background: '#fff3cd', color: '#664d03', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
@@ -314,7 +494,7 @@ function App() {
             </div>
 
             <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
                 <button key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0d6efd' : 'white', color: filterCategory === cat ? 'white' : '#333', border: '1px solid #ccc', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>
                   {cat}
@@ -322,20 +502,25 @@ function App() {
               ))}
             </div>
 
-            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
-            {filteredRequests.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
-            ) : (
-              filteredRequests.map(req => (
-                <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
-                    {getUrgencyBadge(req.urgencyLevel)}
+            <section className="dashboard-request-summary">
+              <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
+              {filteredRequests.length === 0 ? (
+                <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
+              ) : (
+                filteredRequests.map(req => (
+                  <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
+                      {getUrgencyBadge(req.urgencyLevel)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
+                      <p style={{ margin: '3px 0' }}>Status: {req.status}</p>
+                      {renderRequestDetails(req)}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>Loc: {req.location} | By: {req.reportedByName || 'N/A'}</div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </section>
           </div>
         )}
 
@@ -382,7 +567,7 @@ function App() {
                 <label style={{ fontWeight: 'bold' }}>Photo</label>
                 <input type="file" accept="image/*" onChange={e => setFormData({...formData, photo: e.target.files[0]})} style={inputStyle} />
               </div>
-              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Submit</button>
+              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
             </form>
           </div>
         )}
@@ -399,11 +584,10 @@ function App() {
                     <strong>{req.requestId} - {req.category}</strong>
                     {getUrgencyBadge(req.urgencyLevel)}
                   </div>
-                  <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
-                  <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+                  {renderRequestDetails(req)}
                   <input type="text" placeholder="Tech Name" value={tech.name} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, name: e.target.value }})} style={{...inputStyle, margin: '4px 0'}} />
                   <input type="tel" placeholder="Tech Mobile" value={tech.mobile} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, mobile: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                  <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Accept</button>
+                  <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
                 </div>
               );
             })}
@@ -413,15 +597,34 @@ function App() {
         {/* REQUESTS LIST TAB */}
         {activeTab === 'dashboard' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>All Requests</h3>
-            {filteredRequests.map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>
+              All Requests ({filteredRequests.length})
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px', marginBottom: '10px' }}>
+              {[
+                ['New', '#fff3cd', '#664d03'],
+                ['Accepted', '#cfe2ff', '#084298'],
+                ['In Progress', '#e2f0d9', '#276749'],
+                ['Completed', '#d1e7dd', '#0f5132']
+              ].map(([status, background, color]) => (
+                <div key={status} style={{ background, color, padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{status.toUpperCase()}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{requestStatusCounts[status] || 0}</div>
+                </div>
+              ))}
+            </div>
+            {filteredRequests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
+            ) : filteredRequests.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <strong>{req.requestId} - {req.category}</strong>
-                  <span><b>{req.status}</b></span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {getUrgencyBadge(req.urgencyLevel)}
+                    <b>{req.status}</b>
+                  </span>
                 </div>
-                <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
-                <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+                {renderRequestDetails(req)}
               </div>
             ))}
           </div>
@@ -430,16 +633,37 @@ function App() {
         {/* IN PROGRESS TAB */}
         {activeTab === 'electrician-in-progress' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>In Progress</h3>
-            {[...acceptedJobs, ...inProgressJobs].map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complaint Progress</h3>
+            {requests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
+            ) : requests.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong>{req.category}</strong>
-                  <span>{req.status}</span>
+                  <strong>{req.requestId} - {req.category}</strong>
+                  <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
+                    <b>{req.status === 'Completed' ? 'Completed' : 'Not completed'}</b>
+                  </span>
                 </div>
-                <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
+                <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
+                {req.photo && (
+                  <div style={{ margin: '8px 0' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+                    <a
+                      href={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <img
+                        src={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                        alt={`Complaint photo for ${req.requestId}`}
+                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                      />
+                    </a>
+                  </div>
+                )}
                 {req.status === 'Accepted' && (
-                  <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
+                  <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Start</button>
                 )}
               </div>
             ))}
@@ -449,13 +673,36 @@ function App() {
         {/* COMPLETION TAB */}
         {activeTab === 'electrician-completion' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Mark Complete</h3>
-            {inProgressJobs.map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complete Complaints</h3>
+            {inProgressJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints are currently in progress.</p>
+            ) : inProgressJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <strong>{req.category} - {req.location}</strong>
-                <input type="file" accept="image/*" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})} style={{...inputStyle, margin: '4px 0'}} />
+                <strong>{req.requestId} - {req.category}</strong>
+                {renderRequestDetails(req)}
+                <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '8px' }}>
+                  Upload photo of completed work (required)
+                </label>
+                <input
+                  id={`completion-photo-${req._id}`}
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
+                  style={{...inputStyle, margin: '4px 0'}}
+                />
+                {completionData[req._id]?.completionPhoto && (
+                  <p style={{ margin: '0 0 6px', color: '#198754' }}>
+                    Selected: {completionData[req._id].completionPhoto.name}
+                  </p>
+                )}
                 <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                <button onClick={() => updateStatus(req._id, 'Completed', true)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Mark Done</button>
+                <button
+                  onClick={() => updateStatus(req._id, 'Completed', true)}
+                  disabled={!completionData[req._id]?.completionPhoto}
+                  style={{ width: '100%', padding: '8px', background: completionData[req._id]?.completionPhoto ? '#198754' : '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: completionData[req._id]?.completionPhoto ? 'pointer' : 'not-allowed' }}
+                >
+                  Mark Done
+                </button>
               </div>
             ))}
           </div>
@@ -465,52 +712,67 @@ function App() {
         {activeTab === 'completed-status' && (
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs</h3>
-            {completedJobs.map(req => (
+            {completedJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No completed complaints.</p>
+            ) : completedJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <strong>{req.category} - {req.location}</strong>
-                <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>{req.requestId} - {req.category}</strong>
+                  <b style={{ color: '#198754' }}>Completed</b>
+                </div>
+                {renderRequestDetails(req, false)}
+                <p style={{ margin: '3px 0' }}>Completed by: {req.assignedName || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>Completer mobile: {req.assignedMobile || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>
+                  Completed at: {req.completedAt ? new Date(req.completedAt).toLocaleString() : 'N/A'}
+                </p>
+                {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
+                <div className="completed-photo-grid">
+                  {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
+                  {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* TEAM DIRECTORY TAB (Admin Only) */}
-        {activeTab === 'team-directory-screen9' && userRole === 'admin' && (
+        {/* TEAM DIRECTORY TAB */}
+        {activeTab === 'team-directory-screen9' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <h3 style={{ margin: 0, fontSize: '15px' }}>Staff Team</h3>
-              <button onClick={() => setActiveTab('admin-panel-screen10')} style={{ padding: '4px 8px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>+ Add</button>
+              <h3 style={{ margin: 0, fontSize: '15px' }}>Team</h3>
+              <button onClick={() => setActiveTab('admin-panel-screen10')} style={{ padding: '4px 8px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>+ Add</button>
             </div>
             {team.map(m => (
               <div key={m._id} style={{ background: 'white', padding: '8px', borderRadius: '6px', marginBottom: '6px', border: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '12px', alignItems: 'center' }}>
                 <div><b>{m.personName}</b> ({m.category})<br/>{m.mobileNumber}</div>
-                <button onClick={() => handleDeleteMember(m._id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '4px 6px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>Del</button>
+                <button onClick={() => handleDeleteMember(m._id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '4px 6px', borderRadius: '4px', fontSize: '10px' }}>Del</button>
               </div>
             ))}
           </div>
         )}
 
-        {/* ADD TEAM MEMBER TAB (Admin Only) */}
-        {activeTab === 'admin-panel-screen10' && userRole === 'admin' && (
+        {/* ADD TEAM MEMBER TAB */}
+        {activeTab === 'admin-panel-screen10' && (
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Add Staff Member</h3>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Add Team Member</h3>
             <form onSubmit={handleTeamSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
               <select value={teamForm.category} onChange={e => setTeamForm({...teamForm, category: e.target.value})} style={inputStyle}>
                 {['Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(c => <option key={c} value={c}>{c}</option>)}
               </select>
               <input type="text" placeholder="Name" value={teamForm.personName} onChange={e => setTeamForm({...teamForm, personName: e.target.value})} required style={inputStyle} />
               <input type="tel" placeholder="Mobile" value={teamForm.mobileNumber} onChange={e => setTeamForm({...teamForm, mobileNumber: e.target.value})} required style={inputStyle} />
-              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save</button>
+              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save</button>
             </form>
           </div>
         )}
 
-        {/* SETTINGS TAB (Admin Only) */}
-        {activeTab === 'db-management' && userRole === 'admin' && (
+        {/* SETTINGS TAB */}
+        {activeTab === 'db-management' && (
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b> | Team: <b>{dbStats.teamMembers}</b></p>
-            <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px', cursor: 'pointer' }}>Clear Database</button>
+            <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
           </div>
         )}
 
@@ -518,7 +780,7 @@ function App() {
         {activeTab === 'success-screen' && (
           <div style={{ background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
             <h3 style={{ color: '#198754', margin: '0 0 10px 0', fontSize: '16px' }}>Successfully Submitted!</h3>
-            <button onClick={() => setActiveTab(userRole === 'admin' ? 'admin-dashboard' : 'report')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Continue</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Back to Dashboard</button>
           </div>
         )}
 
@@ -548,6 +810,15 @@ const inputStyle = {
   border: '1px solid #ccc',
   boxSizing: 'border-box',
   fontSize: '12px'
+};
+
+const loginInputStyle = {
+  width: '100%',
+  padding: '11px',
+  boxSizing: 'border-box',
+  border: '1px solid #b8c1cc',
+  borderRadius: '5px',
+  fontSize: '16px'
 };
 
 export default App;
