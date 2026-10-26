@@ -107,13 +107,22 @@ function App() {
       return;
     }
 
+    if (Notification.permission === 'denied') {
+      setPushStatus('Notifications are blocked for this site. Allow them in your browser site settings, then reload and try again.');
+      return;
+    }
+
     setIsEnablingPush(true);
     setPushStatus('');
 
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        setPushStatus('Allow notifications in your browser settings to receive complaint alerts.');
+        setPushStatus(
+          permission === 'denied'
+            ? 'Notifications were blocked. Allow them in your browser site settings, then reload and try again.'
+            : 'Allow notifications when your browser asks to receive complaint alerts.'
+        );
         return;
       }
 
