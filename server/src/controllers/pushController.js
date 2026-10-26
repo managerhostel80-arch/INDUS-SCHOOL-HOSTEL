@@ -20,7 +20,7 @@ exports.subscribe = async (req, res) => {
       return res.status(400).json({ success: false, error: 'A valid push subscription is required.' });
     }
 
-    await PushSubscription.findOneAndUpdate(
+    const subscription = await PushSubscription.findOneAndUpdate(
       { endpoint },
       {
         endpoint,
@@ -30,6 +30,9 @@ exports.subscribe = async (req, res) => {
       { upsert: true, new: true, runValidators: true }
     );
 
+    console.info(
+      `Push subscription saved: ${subscription._id}; user agent: ${(subscription.userAgent || 'unknown').slice(0, 200)}`
+    );
     res.status(201).json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
