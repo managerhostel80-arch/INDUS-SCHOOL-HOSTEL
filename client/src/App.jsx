@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const API_BASE_URL = 'https://indus-school-hostel.onrender.com';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   return Uint8Array.from(rawData, character => character.charCodeAt(0));
+};
+
+const areKeysEqual = (currentKey, configuredKey) => {
+  if (!currentKey || currentKey.byteLength !== configuredKey.byteLength) return false;
+  const currentBytes = new Uint8Array(currentKey);
+  return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
 function App() {
@@ -50,9 +56,9 @@ function App() {
   const fetchData = async () => {
     try {
       const [requestsRes, teamRes, dbRes] = await Promise.all([
-        fetch('https://indus-school-hostel.onrender.com/api/requests'),
-        fetch('https://indus-school-hostel.onrender.com/api/team'),
-        fetch('https://indus-school-hostel.onrender.com/api/db/stats').catch(() => null)
+        fetch(`${API_BASE_URL}/api/requests`),
+        fetch(`${API_BASE_URL}/api/team`),
+        fetch(`${API_BASE_URL}/api/db/stats`).catch(() => null)
       ]);
 
       const requestsResult = requestsRes ? await requestsRes.json() : null;
@@ -132,12 +138,19 @@ function App() {
         throw new Error(keyResult.error || 'Could not load notification settings.');
       }
 
-      const registration = await navigator.serviceWorker.register('/service-worker.js');
+      await navigator.serviceWorker.register('/service-worker.js');
+      const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
+      const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
+      if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(keyResult.publicKey)
+          applicationServerKey
         });
       }
 
@@ -168,7 +181,7 @@ function App() {
     });
 
     try {
-      const res = await fetch('https://indus-school-hostel.onrender.com/api/requests', {
+      const res = await fetch(`${API_BASE_URL}/api/requests`, {
         method: 'POST',
         body: data
       });
@@ -204,7 +217,7 @@ function App() {
     }
 
     try {
-      const res = await fetch(`https://indus-school-hostel.onrender.com/api/requests/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: 'PATCH',
         body: data
       });
@@ -224,8 +237,8 @@ function App() {
     e.preventDefault();
     const method = editingMemberId ? 'PATCH' : 'POST';
     const url = editingMemberId 
-      ? `https://indus-school-hostel.onrender.com/api/team/${editingMemberId}` 
-      : 'https://indus-school-hostel.onrender.com/api/team';
+      ? `${API_BASE_URL}/api/team/${editingMemberId}`
+      : `${API_BASE_URL}/api/team`;
 
     try {
       const res = await fetch(url, {
@@ -248,7 +261,7 @@ function App() {
   const handleDeleteMember = async (id) => {
     if (!window.confirm('Are you sure you want to delete this employee?')) return;
     try {
-      await fetch(`https://indus-school-hostel.onrender.com/api/team/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE_URL}/api/team/${id}`, { method: 'DELETE' });
       await fetchData();
     } catch (err) {
       console.error('Error deleting team member:', err);
@@ -258,7 +271,7 @@ function App() {
   const handleClearDatabase = async () => {
     if (!window.confirm('WARNING: This will delete ALL maintenance requests from MongoDB permanently.')) return;
     try {
-      const res = await fetch('https://indus-school-hostel.onrender.com/api/db/clear-requests', { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/db/clear-requests`, { method: 'DELETE' });
       const result = await res.json();
       if (result.success) {
         alert(result.message);
@@ -342,7 +355,7 @@ function App() {
     return counts;
   }, {});
   const getPhotoUrl = (photo) => (
-    photo ? (photo.startsWith('http') ? photo : `https://indus-school-hostel.onrender.com${photo}`) : null
+    photo ? (photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`) : null
   );
 
   if (!isLoggedIn) {
@@ -681,12 +694,12 @@ function App() {
                   <div style={{ margin: '8px 0' }}>
                     <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
                     <a
-                      href={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                      href={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
                       target="_blank"
                       rel="noreferrer"
                     >
                       <img
-                        src={req.photo.startsWith('http') ? req.photo : `https://indus-school-hostel.onrender.com${req.photo}`}
+                        src={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
                         alt={`Complaint photo for ${req.requestId}`}
                         style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
                       />
