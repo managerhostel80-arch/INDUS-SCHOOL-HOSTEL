@@ -166,6 +166,10 @@ body {
 }
 
 .dashboard-category-filters button {
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+  color: #475569;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
 }
 
@@ -175,12 +179,15 @@ body {
 }
 
 .dashboard-filter-active {
+  background: #0f766e !important;
   border-color: #164e8a !important;
+  color: #fff !important;
   box-shadow: 0 2px 6px rgba(22, 78, 138, 0.2);
 }
 
 .dashboard-request-card {
-  border-color: #e2e8f0 !important;
+  border: 1px solid #e2e8f0;
+  background: #fff;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }

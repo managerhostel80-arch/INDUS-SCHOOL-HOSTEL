@@ -543,7 +543,7 @@ function App() {
             <h4 className="dashboard-section-title" style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
             <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                <button key={cat} className={filterCategory === cat ? 'dashboard-filter-active' : ''} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0f766e' : 'white', color: filterCategory === cat ? 'white' : '#475569', border: '1px solid #cbd5e1', borderRadius: '5px', fontSize: '10px', cursor: 'pointer' }}>
+                <button key={cat} className={filterCategory === cat ? 'dashboard-filter-active' : ''} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>
                   {cat}
                 </button>
               ))}
@@ -555,7 +555,7 @@ function App() {
                 <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
               ) : (
                 filteredRequests.map(req => (
-                  <div key={req._id} className="dashboard-request-card" style={{ background: 'white', padding: '10px', borderRadius: '8px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
+                  <div key={req._id} className="dashboard-request-card" style={{ padding: '10px', borderRadius: '8px', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
                       {getUrgencyBadge(req.urgencyLevel)}
