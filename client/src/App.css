@@ -68,7 +68,7 @@ body {
 }
 
 .dashboard-title {
-  color: #102a56;
+  color: #12304a;
   padding-bottom: 12px;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -95,16 +95,36 @@ body {
   background: #f97316;
 }
 
+.dashboard-stat-new {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
 .dashboard-stat-accepted::before {
   background: #3b82f6;
+}
+
+.dashboard-stat-accepted {
+  background: #eff6ff;
+  color: #1d4ed8;
 }
 
 .dashboard-stat-progress::before {
   background: #06b6d4;
 }
 
+.dashboard-stat-progress {
+  background: #ecfeff;
+  color: #0e7490;
+}
+
 .dashboard-stat-completed::before {
   background: #22c55e;
+}
+
+.dashboard-stat-completed {
+  background: #f0fdf4;
+  color: #15803d;
 }
 
 .dashboard-stat-card:hover {
@@ -117,7 +137,7 @@ body {
 }
 
 .dashboard-section-title {
-  color: #334155;
+  color: #1e3a5f;
 }
 
 .dashboard-category-filters {
@@ -140,6 +160,7 @@ body {
 }
 
 .dashboard-request-card {
+  border-color: #e2e8f0 !important;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
@@ -202,8 +223,9 @@ body {
   }
 
   .app-nav-row button {
-    padding: 6px 7px !important;
-    font-size: 10px !important;
+    min-height: 40px;
+    padding: 9px 5px !important;
+    font-size: 11px !important;
   }
 
   .app-main {
