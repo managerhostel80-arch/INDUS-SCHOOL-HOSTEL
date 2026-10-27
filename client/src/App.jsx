@@ -368,7 +368,7 @@ function App() {
           justifyContent: 'center',
           padding: '16px',
           boxSizing: 'border-box',
-          background: '#f4f6f9',
+          background: 'linear-gradient(rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.18)), url("/school-background.png") center / cover no-repeat',
           fontFamily: 'Arial, sans-serif'
         }}
       >
@@ -379,14 +379,19 @@ function App() {
             padding: '28px',
             boxSizing: 'border-box',
             borderRadius: '10px',
-            background: '#fff',
+            background: 'rgba(255, 255, 255, 0.94)',
+            backdropFilter: 'blur(4px)',
             boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)'
           }}
         >
           <header style={{ marginBottom: '24px', textAlign: 'center' }}>
-            <h1 style={{ margin: '0 0 8px', color: '#1e40af', fontSize: '22px' }}>
-              Montessori Indus Residential School
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
+              <img src="/school-logo-left.png" alt="First Among Equals logo" style={{ width: 'clamp(24px, 7.5vw, 36px)', height: 'clamp(24px, 7.5vw, 36px)', objectFit: 'contain', flexShrink: 0 }} />
+              <h1 style={{ margin: 0, color: '#1e40af', fontSize: 'clamp(10px, 3.5vw, 16px)', whiteSpace: 'nowrap' }}>
+                Montessori Indus Residential School
+              </h1>
+              <img src="/school-logo-right.jpg" alt="Montessori Golden Jubilee logo" style={{ width: 'clamp(24px, 7.5vw, 36px)', height: 'clamp(24px, 7.5vw, 36px)', objectFit: 'contain', flexShrink: 0 }} />
+            </div>
             <p style={{ margin: 0, color: '#555', fontSize: '15px' }}>
               Hostel 360 – Maintenance System
             </p>
@@ -446,10 +451,6 @@ function App() {
             </button>
           </form>
 
-          <div style={{ marginTop: '16px', fontSize: '12px', color: '#555', background: '#f8f9fa', padding: '10px', borderRadius: '5px', lineHeight: '1.5' }}>
-            <div><b>Admin:</b> admin / hostel360</div>
-            <div><b>Staff User:</b> staff / user123</div>
-          </div>
         </section>
       </main>
     );
