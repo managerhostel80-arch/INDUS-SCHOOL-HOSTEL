@@ -30,6 +30,32 @@ body {
   box-shadow: 0 5px 18px rgba(15, 23, 42, 0.18);
 }
 
+.school-branding {
+  display: inline-block;
+  max-width: 100%;
+  margin-bottom: 8px;
+  padding: 7px 16px;
+  border: 1px solid rgba(226, 232, 240, 0.55);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.school-name {
+  margin: 0 0 2px;
+  font-size: clamp(13px, 4.5vw, 20px);
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.school-caption {
+  margin: 0;
+  font-size: clamp(8px, 2.2vw, 10px);
+  font-weight: bold;
+  opacity: 0.95;
+  text-align: center;
+}
+
 .app-nav-tabs {
   display: flex;
   flex-direction: column;
@@ -38,21 +64,15 @@ body {
 }
 
 .app-nav-row {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   min-width: 0;
 }
 
-.app-nav-row-primary {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-}
-
-.app-nav-row-secondary {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .app-nav-row button {
-  min-width: 0;
+  flex: 1 1 145px;
+  min-width: 120px;
 }
 
 .dashboard-stats {
@@ -197,29 +217,12 @@ body {
     padding: 8px !important;
   }
 
-  .app-header h2 {
-    font-size: 14px !important;
-  }
-
-  .app-header h3 {
-    font-size: 12px !important;
-    margin-bottom: 5px !important;
-  }
-
   .app-nav-tabs {
     gap: 4px !important;
   }
 
   .app-nav-row {
     gap: 4px !important;
-  }
-
-  .app-nav-row-primary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .app-nav-row-secondary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .app-nav-row button {
@@ -260,10 +263,6 @@ body {
 }
 
 @media (max-width: 420px) {
-  .app-nav-row-primary {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .dashboard-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }

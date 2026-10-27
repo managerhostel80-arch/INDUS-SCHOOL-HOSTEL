@@ -461,10 +461,12 @@ function App() {
       
       {/* Header with School Name */}
       <header className="app-header" style={{ background: '#12304a', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
-        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center', whiteSpace: 'nowrap' }}>Montessori Indus Residential School</h2>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '7.5px', opacity: 0.95, fontWeight: 'bold', textAlign: 'center' }}>
-          Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
-        </h3>
+        <div className="school-branding">
+          <h2 className="school-name">Montessori Indus Residential School</h2>
+          <h3 className="school-caption">
+            Hostel 360 – Maintenance System
+          </h3>
+        </div>
         
         {/* Navigation Tabs Bar (Role Filtered) */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
