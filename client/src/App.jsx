@@ -858,7 +858,7 @@ function App() {
 }
 
 const navTabStyle = (active) => ({
-  background: active ? '#0f766e' : '#1f4664',
+  background: active ? '#0f9488' : '#334e68',
   color: 'white',
   border: 'none',
   padding: '9px 10px',
