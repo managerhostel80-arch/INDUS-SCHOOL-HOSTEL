@@ -385,16 +385,14 @@ function App() {
           }}
         >
           <header style={{ marginBottom: '24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-              <img src={`${PUBLIC_ASSET_BASE}school-logo-left.png`} alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
-              <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
-                <h1 style={{ margin: '0 0 4px 0', color: '#1e40af', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-                  Montessori Indus Residential School
-                </h1>
-                <p style={{ margin: 0, color: '#333', fontSize: '7px', fontWeight: 'bold' }}>
-                  Hostel 360 – Maintenance System
-                </p>
-              </div>
+            <h1 style={{ margin: '0 0 4px 0', color: '#1e40af', fontSize: 'clamp(9px, 3.5vw, 14px)', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+              Montessori Indus Residential School
+            </h1>
+            <p style={{ margin: '0 0 12px', color: '#333', fontSize: '7px', fontWeight: 'bold' }}>
+              Hostel 360 – Maintenance System
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+              <img src={`${PUBLIC_ASSET_BASE}school-logo-left.png`} alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain' }} />
               <img src={`${PUBLIC_ASSET_BASE}school-logo-right.jpg`} alt="Logo Right" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
             </div>
           </header>
