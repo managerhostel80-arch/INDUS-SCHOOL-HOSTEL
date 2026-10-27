@@ -15,11 +15,19 @@ body {
   overflow-x: hidden;
 }
 
+.app-shell {
+  color: #1e293b;
+}
+
 .app-header,
 .app-main {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.app-header {
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.18);
 }
 
 .app-nav-tabs {
@@ -51,9 +59,94 @@ body {
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
+.dashboard-overview {
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+}
+
+.dashboard-title {
+  color: #102a56;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dashboard-stat-card {
+  position: relative;
+  overflow: hidden;
+  min-height: 86px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.dashboard-stat-card::before {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  content: '';
+}
+
+.dashboard-stat-new::before {
+  background: #f97316;
+}
+
+.dashboard-stat-accepted::before {
+  background: #3b82f6;
+}
+
+.dashboard-stat-progress::before {
+  background: #06b6d4;
+}
+
+.dashboard-stat-completed::before {
+  background: #22c55e;
+}
+
+.dashboard-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+}
+
+.dashboard-stat-value {
+  margin-top: 5px;
+}
+
+.dashboard-section-title {
+  color: #334155;
+}
+
 .dashboard-category-filters {
   display: flex;
   flex-wrap: wrap;
+}
+
+.dashboard-category-filters button {
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.dashboard-category-filters button:not(.dashboard-filter-active):hover {
+  border-color: #94a3b8 !important;
+  background: #f1f5f9 !important;
+}
+
+.dashboard-filter-active {
+  border-color: #164e8a !important;
+  box-shadow: 0 2px 6px rgba(22, 78, 138, 0.2);
+}
+
+.dashboard-request-card {
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.dashboard-request-card:hover {
+  border-color: #94a3b8 !important;
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
 }
 
 .dashboard-category-filters button {
@@ -74,6 +167,11 @@ body {
 }
 
 @media (max-width: 700px) {
+  .dashboard-overview {
+    padding: 12px;
+    border-radius: 11px;
+  }
+
   .app-header {
     padding: 8px !important;
   }

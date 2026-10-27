@@ -457,10 +457,10 @@ function App() {
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
+    <div className="app-shell" style={{ fontFamily: 'Arial, sans-serif', background: '#f1f5f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Header with School Name */}
-      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+      <header className="app-header" style={{ background: 'linear-gradient(120deg, #102a56 0%, #164e8a 58%, #0e7490 100%)', color: 'white', padding: '16px 12px 12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
         <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center' }}>Montessori Indus Residential School</h2>
         <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
@@ -517,43 +517,43 @@ function App() {
         {/* DASHBOARD TAB (Admin Only) */}
         {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
+            <h3 className="dashboard-title" style={{ margin: '0 0 14px 0', fontSize: '20px' }}>Overview</h3>
             
             <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
-              <div onClick={() => setActiveTab('new-complaint-view')} style={{ background: '#fff3cd', color: '#664d03', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+              <div className="dashboard-stat-card dashboard-stat-new" onClick={() => setActiveTab('new-complaint-view')} style={{ background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', color: '#9a3412', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
+                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.new}</div>
               </div>
-              <div onClick={() => setActiveTab('dashboard')} style={{ background: '#cfe2ff', color: '#084298', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+              <div className="dashboard-stat-card dashboard-stat-accepted" onClick={() => setActiveTab('dashboard')} style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', color: '#1e40af', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>ACCEPTED</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.accepted}</div>
+                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.accepted}</div>
               </div>
-              <div onClick={() => setActiveTab('electrician-in-progress')} style={{ background: '#e2f0d9', color: '#276749', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+              <div className="dashboard-stat-card dashboard-stat-progress" onClick={() => setActiveTab('electrician-in-progress')} style={{ background: 'linear-gradient(135deg, #ecfeff, #cffafe)', color: '#155e75', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>IN PROGRESS</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.inProgress}</div>
+                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.inProgress}</div>
               </div>
-              <div onClick={() => setActiveTab('completed-status')} style={{ background: '#d1e7dd', color: '#0f5132', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+              <div className="dashboard-stat-card dashboard-stat-completed" onClick={() => setActiveTab('completed-status')} style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', color: '#166534', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>COMPLETED</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{completedJobs.length}</div>
+                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{completedJobs.length}</div>
               </div>
             </div>
 
-            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
+            <h4 className="dashboard-section-title" style={{ fontSize: '14px', margin: '18px 0 8px 0' }}>Filter Category</h4>
             <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                <button key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0d6efd' : 'white', color: filterCategory === cat ? 'white' : '#333', border: '1px solid #ccc', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>
+                <button className={filterCategory === cat ? 'dashboard-filter-active' : ''} key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '7px 10px', background: filterCategory === cat ? '#164e8a' : 'white', color: filterCategory === cat ? 'white' : '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>
                   {cat}
                 </button>
               ))}
             </div>
 
             <section className="dashboard-request-summary">
-              <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
+              <h4 className="dashboard-section-title" style={{ fontSize: '14px', margin: '18px 0 8px 0' }}>Requests</h4>
               {filteredRequests.length === 0 ? (
                 <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
               ) : (
                 filteredRequests.map(req => (
-                  <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
+                  <div className="dashboard-request-card" key={req._id} style={{ background: 'white', padding: '12px', borderRadius: '9px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
                       {getUrgencyBadge(req.urgencyLevel)}
@@ -835,16 +835,17 @@ function App() {
 }
 
 const navTabStyle = (active) => ({
-  background: active ? '#0b5ed7' : '#1e3a8a',
-  color: 'white',
-  border: 'none',
-  padding: '6px 10px',
-  borderRadius: '4px',
+  background: active ? '#fbbf24' : 'rgba(255, 255, 255, 0.12)',
+  color: active ? '#102a56' : 'white',
+  border: active ? '1px solid #fcd34d' : '1px solid rgba(255, 255, 255, 0.18)',
+  padding: '7px 10px',
+  borderRadius: '6px',
   cursor: 'pointer',
   fontSize: '11px',
   whiteSpace: 'nowrap',
   flexShrink: 0,
-  fontWeight: 'bold'
+  fontWeight: 'bold',
+  transition: 'background-color 140ms ease, color 140ms ease'
 });
 
 const inputStyle = {
