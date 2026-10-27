@@ -385,12 +385,12 @@ function App() {
           }}
         >
           <header style={{ marginBottom: '24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '4px' }}>
-              <img src={`${PUBLIC_ASSET_BASE}school-logo-left.png`} alt="Logo Left" style={{ width: 'clamp(28px, 10vw, 45px)', height: 'clamp(28px, 10vw, 45px)', objectFit: 'contain', flexShrink: 0 }} />
-              <h1 style={{ margin: 0, color: '#1e40af', fontSize: 'clamp(8px, 3vw, 14px)', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '4px' }}>
+              <img src={`${PUBLIC_ASSET_BASE}school-logo-left.png`} alt="Logo Left" style={{ width: 'clamp(24px, 7vw, 45px)', height: 'clamp(24px, 7vw, 45px)', objectFit: 'contain', flexShrink: 0 }} />
+              <h1 style={{ margin: 0, color: '#1e40af', fontSize: 'clamp(8px, 2.4vw, 14px)', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                 Montessori Indus Residential School
               </h1>
-              <img src={`${PUBLIC_ASSET_BASE}school-logo-right.jpg`} alt="Logo Right" style={{ width: 'clamp(28px, 10vw, 45px)', height: 'clamp(28px, 10vw, 45px)', objectFit: 'contain', flexShrink: 0 }} />
+              <img src={`${PUBLIC_ASSET_BASE}school-logo-right.jpg`} alt="Logo Right" style={{ width: 'clamp(24px, 7vw, 45px)', height: 'clamp(24px, 7vw, 45px)', objectFit: 'contain', flexShrink: 0 }} />
             </div>
             <p style={{ margin: '0 0 12px', color: '#333', fontSize: '7px', fontWeight: 'bold' }}>
               Hostel 360 – Maintenance System
