@@ -269,17 +269,26 @@ function App() {
     }
   };
 
-  const handleClearDatabase = async () => {
-    if (!window.confirm('WARNING: This will delete ALL maintenance requests from MongoDB permanently.')) return;
+  const handleDeleteRequests = async (status) => {
+    const isAll = status === 'All';
+    const description = isAll ? 'ALL requests' : `all ${status} requests`;
+    if (!window.confirm(`WARNING: This will permanently delete ${description}. This cannot be undone.`)) return;
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/db/clear-requests`, { method: 'DELETE' });
+      const url = isAll
+        ? `${API_BASE_URL}/api/requests/clear-requests`
+        : `${API_BASE_URL}/api/requests/status/${encodeURIComponent(status)}`;
+      const res = await fetch(url, { method: 'DELETE' });
       const result = await res.json();
-      if (result.success) {
-        alert(result.message);
-        await fetchData();
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || `Could not delete ${description}.`);
       }
+
+      window.alert(result.message || `${description} deleted successfully.`);
+      await fetchData();
     } catch (err) {
-      console.error('Error clearing database:', err);
+      console.error(`Error deleting ${description}:`, err);
+      window.alert(err.message || `Could not delete ${description}.`);
     }
   };
 
@@ -819,7 +828,19 @@ function App() {
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b> | Team: <b>{dbStats.teamMembers}</b></p>
-            <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
+            <h4 style={{ margin: '16px 0 8px', fontSize: '13px' }}>Delete Requests</h4>
+            <p style={{ margin: '0 0 8px', color: '#475569' }}>Permanently delete requests by status. This action cannot be undone.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+              {['Completed', 'In Progress', 'Accepted', 'All'].map(status => (
+                <button
+                  key={status}
+                  onClick={() => handleDeleteRequests(status)}
+                  style={{ padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Delete {status}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
