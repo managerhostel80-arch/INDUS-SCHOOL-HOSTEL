@@ -81,16 +81,16 @@ body {
 
 .dashboard-overview {
   padding: 18px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #bfdbfe;
   border-radius: 14px;
-  background: #fff;
+  background: #eff6ff;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
 }
 
 .dashboard-title {
-  color: #12304a;
+  color: #1e3a8a;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #bfdbfe;
 }
 
 .dashboard-stat-card {
@@ -112,39 +112,39 @@ body {
 }
 
 .dashboard-stat-new::before {
-  background: #f97316;
+  background: #2563eb;
 }
 
 .dashboard-stat-new {
-  background: #fff7ed;
-  color: #9a3412;
+  background: #dbeafe;
+  color: #1e40af;
 }
 
 .dashboard-stat-accepted::before {
-  background: #3b82f6;
+  background: #1d4ed8;
 }
 
 .dashboard-stat-accepted {
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #bfdbfe;
+  color: #1e3a8a;
 }
 
 .dashboard-stat-progress::before {
-  background: #06b6d4;
+  background: #0d9488;
 }
 
 .dashboard-stat-progress {
-  background: #ecfeff;
-  color: #0e7490;
+  background: #ccfbf1;
+  color: #0f766e;
 }
 
 .dashboard-stat-completed::before {
-  background: #22c55e;
+  background: #14b8a6;
 }
 
 .dashboard-stat-completed {
-  background: #f0fdf4;
-  color: #15803d;
+  background: #99f6e4;
+  color: #115e59;
 }
 
 .dashboard-stat-card:hover {
@@ -179,15 +179,15 @@ body {
 }
 
 .dashboard-filter-active {
-  background: #0f766e !important;
-  border-color: #164e8a !important;
+  background: #0369a1 !important;
+  border-color: #075985 !important;
   color: #fff !important;
-  box-shadow: 0 2px 6px rgba(22, 78, 138, 0.2);
+  box-shadow: 0 2px 6px rgba(3, 105, 161, 0.25);
 }
 
 .dashboard-request-card {
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  border: 1px solid #99f6e4;
+  background: #f0fdfa;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
