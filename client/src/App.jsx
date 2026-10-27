@@ -519,7 +519,7 @@ function App() {
         {/* DASHBOARD TAB (Admin Only) */}
         {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
-            <h3 className="dashboard-title" style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
+            <h3 className="dashboard-title" style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Dashboard</h3>
             
             <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
               <div className="dashboard-stat-card dashboard-stat-new" onClick={() => setActiveTab('new-complaint-view')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
