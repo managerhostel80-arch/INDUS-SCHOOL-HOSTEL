@@ -368,37 +368,38 @@ function App() {
           justifyContent: 'center',
           padding: '16px',
           boxSizing: 'border-box',
-          background: 'linear-gradient(rgba(15, 23, 42, 0.18), rgba(15, 23, 42, 0.18)), url("/school-background.png") center / cover no-repeat',
+          background: 'linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.35)), url("/school-background.jpg") center / cover no-repeat',
           fontFamily: 'Arial, sans-serif'
         }}
       >
         <section
           style={{
             width: '100%',
-            maxWidth: '400px',
+            maxWidth: '460px',
             padding: '28px',
             boxSizing: 'border-box',
             borderRadius: '10px',
-            background: 'rgba(255, 255, 255, 0.94)',
-            backdropFilter: 'blur(4px)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)'
+            background: 'rgba(255, 255, 255, 0.95)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
           }}
         >
           <header style={{ marginBottom: '24px', textAlign: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginBottom: '8px' }}>
-              <img src="/school-logo-left.png" alt="First Among Equals logo" style={{ width: 'clamp(24px, 7.5vw, 36px)', height: 'clamp(24px, 7.5vw, 36px)', objectFit: 'contain', flexShrink: 0 }} />
-              <h1 style={{ margin: 0, color: '#1e40af', fontSize: 'clamp(10px, 3.5vw, 16px)', whiteSpace: 'nowrap' }}>
-                Montessori Indus Residential School
-              </h1>
-              <img src="/school-logo-right.jpg" alt="Montessori Golden Jubilee logo" style={{ width: 'clamp(24px, 7.5vw, 36px)', height: 'clamp(24px, 7.5vw, 36px)', objectFit: 'contain', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+              <img src="/school-logo-left.png" alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+                <h1 style={{ margin: '0 0 4px 0', color: '#1e40af', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                  Montessori Indus Residential School
+                </h1>
+                <p style={{ margin: 0, color: '#333', fontSize: '7px', fontWeight: 'bold' }}>
+                  Hostel 360 – Maintenance System
+                </p>
+              </div>
+              <img src="/school-logo-right.jpg" alt="Logo Right" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
             </div>
-            <p style={{ margin: 0, color: '#555', fontSize: '15px' }}>
-              Hostel 360 – Maintenance System
-            </p>
           </header>
 
           <form onSubmit={handleLoginSubmit}>
-            <label htmlFor="login-username" style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold' }}>
+            <label htmlFor="login-username" style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '12px' }}>
               Username
             </label>
             <input
@@ -412,7 +413,7 @@ function App() {
               style={loginInputStyle}
             />
 
-            <label htmlFor="login-password" style={{ display: 'block', margin: '16px 0 6px', fontWeight: 'bold' }}>
+            <label htmlFor="login-password" style={{ display: 'block', margin: '14px 0 6px', fontWeight: 'bold', fontSize: '12px' }}>
               Password
             </label>
             <input
@@ -427,7 +428,7 @@ function App() {
             />
 
             {loginError && (
-              <p role="alert" style={{ margin: '12px 0 0', color: '#b91c1c', fontSize: '14px' }}>
+              <p role="alert" style={{ margin: '12px 0 0', color: '#b91c1c', fontSize: '13px', textAlign: 'center' }}>
                 {loginError}
               </p>
             )}
@@ -442,7 +443,7 @@ function App() {
                 borderRadius: '5px',
                 background: '#1d4ed8',
                 color: '#fff',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: 'bold',
                 cursor: 'pointer'
               }}
@@ -457,12 +458,12 @@ function App() {
   }
 
   return (
-    <div className="app-shell" style={{ fontFamily: 'Arial, sans-serif', background: '#f1f5f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Header with School Name */}
-      <header className="app-header" style={{ background: 'linear-gradient(120deg, #102a56 0%, #164e8a 58%, #0e7490 100%)', color: 'white', padding: '16px 12px 12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
-        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center' }}>Montessori Indus Residential School</h2>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '13px', opacity: 0.9, fontWeight: 'normal', textAlign: 'center' }}>
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center', whiteSpace: 'nowrap' }}>Montessori Indus Residential School</h2>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '7.5px', opacity: 0.95, fontWeight: 'bold', textAlign: 'center' }}>
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
         </h3>
         
@@ -517,43 +518,43 @@ function App() {
         {/* DASHBOARD TAB (Admin Only) */}
         {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
-            <h3 className="dashboard-title" style={{ margin: '0 0 14px 0', fontSize: '20px' }}>Overview</h3>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
             
             <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
-              <div className="dashboard-stat-card dashboard-stat-new" onClick={() => setActiveTab('new-complaint-view')} style={{ background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', color: '#9a3412', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
+              <div onClick={() => setActiveTab('new-complaint-view')} style={{ background: '#fff3cd', color: '#664d03', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
-                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.new}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
               </div>
-              <div className="dashboard-stat-card dashboard-stat-accepted" onClick={() => setActiveTab('dashboard')} style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', color: '#1e40af', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
+              <div onClick={() => setActiveTab('dashboard')} style={{ background: '#cfe2ff', color: '#084298', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>ACCEPTED</div>
-                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.accepted}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.accepted}</div>
               </div>
-              <div className="dashboard-stat-card dashboard-stat-progress" onClick={() => setActiveTab('electrician-in-progress')} style={{ background: 'linear-gradient(135deg, #ecfeff, #cffafe)', color: '#155e75', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
+              <div onClick={() => setActiveTab('electrician-in-progress')} style={{ background: '#e2f0d9', color: '#276749', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>IN PROGRESS</div>
-                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{stats.inProgress}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.inProgress}</div>
               </div>
-              <div className="dashboard-stat-card dashboard-stat-completed" onClick={() => setActiveTab('completed-status')} style={{ background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)', color: '#166534', padding: '14px', borderRadius: '10px', cursor: 'pointer' }}>
+              <div onClick={() => setActiveTab('completed-status')} style={{ background: '#d1e7dd', color: '#0f5132', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>COMPLETED</div>
-                <div className="dashboard-stat-value" style={{ fontSize: '24px', fontWeight: 'bold' }}>{completedJobs.length}</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{completedJobs.length}</div>
               </div>
             </div>
 
-            <h4 className="dashboard-section-title" style={{ fontSize: '14px', margin: '18px 0 8px 0' }}>Filter Category</h4>
+            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
             <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                <button className={filterCategory === cat ? 'dashboard-filter-active' : ''} key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '7px 10px', background: filterCategory === cat ? '#164e8a' : 'white', color: filterCategory === cat ? 'white' : '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '11px', cursor: 'pointer' }}>
+                <button key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0d6efd' : 'white', color: filterCategory === cat ? 'white' : '#333', border: '1px solid #ccc', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>
                   {cat}
                 </button>
               ))}
             </div>
 
             <section className="dashboard-request-summary">
-              <h4 className="dashboard-section-title" style={{ fontSize: '14px', margin: '18px 0 8px 0' }}>Requests</h4>
+              <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
               {filteredRequests.length === 0 ? (
                 <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
               ) : (
                 filteredRequests.map(req => (
-                  <div className="dashboard-request-card" key={req._id} style={{ background: 'white', padding: '12px', borderRadius: '9px', marginBottom: '8px', border: '1px solid #e2e8f0' }}>
+                  <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
                       {getUrgencyBadge(req.urgencyLevel)}
@@ -835,17 +836,16 @@ function App() {
 }
 
 const navTabStyle = (active) => ({
-  background: active ? '#fbbf24' : 'rgba(255, 255, 255, 0.12)',
-  color: active ? '#102a56' : 'white',
-  border: active ? '1px solid #fcd34d' : '1px solid rgba(255, 255, 255, 0.18)',
-  padding: '7px 10px',
-  borderRadius: '6px',
+  background: active ? '#0b5ed7' : '#1e3a8a',
+  color: 'white',
+  border: 'none',
+  padding: '6px 10px',
+  borderRadius: '4px',
   cursor: 'pointer',
   fontSize: '11px',
   whiteSpace: 'nowrap',
   flexShrink: 0,
-  fontWeight: 'bold',
-  transition: 'background-color 140ms ease, color 140ms ease'
+  fontWeight: 'bold'
 });
 
 const inputStyle = {
