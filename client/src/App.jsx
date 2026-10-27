@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
+const PUBLIC_ASSET_BASE = import.meta.env.BASE_URL;
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -368,7 +369,7 @@ function App() {
           justifyContent: 'center',
           padding: '16px',
           boxSizing: 'border-box',
-          background: 'linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.35)), url("/school-background.jpg") center / cover no-repeat',
+          background: `linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.35)), url("${PUBLIC_ASSET_BASE}school-background.png") center / cover no-repeat`,
           fontFamily: 'Arial, sans-serif'
         }}
       >
@@ -385,7 +386,7 @@ function App() {
         >
           <header style={{ marginBottom: '24px', textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
-              <img src="/school-logo-left.png" alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
+              <img src={`${PUBLIC_ASSET_BASE}school-logo-left.png`} alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
               <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
                 <h1 style={{ margin: '0 0 4px 0', color: '#1e40af', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
                   Montessori Indus Residential School
@@ -394,7 +395,7 @@ function App() {
                   Hostel 360 – Maintenance System
                 </p>
               </div>
-              <img src="/school-logo-right.jpg" alt="Logo Right" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
+              <img src={`${PUBLIC_ASSET_BASE}school-logo-right.jpg`} alt="Logo Right" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
             </div>
           </header>
 
