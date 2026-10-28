@@ -211,7 +211,7 @@ function App() {
       const itemComp = completionData[id] || {};
       if (!itemComp.completionPhoto) {
         window.alert('Please upload a photo of the completed work before marking this complaint as done.');
-        return;
+        return false;
       }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
       data.append('completionPhoto', itemComp.completionPhoto);
@@ -225,13 +225,20 @@ function App() {
       const result = await res.json();
       if (!res.ok || !result.success) {
         window.alert(result.error || 'Could not update the request.');
-        return;
+        return false;
       }
 
       await fetchData();
+      return true;
     } catch (err) {
       console.error('Update status error:', err);
+      return false;
     }
+  };
+
+  const acceptRequest = async (id, name, mobile) => {
+    const updated = await updateStatus(id, 'Accepted', false, name, mobile);
+    if (updated) setActiveTab('electrician-completion');
   };
 
   const handleTeamSubmit = async (e) => {
@@ -638,7 +645,7 @@ function App() {
                   {renderRequestDetails(req)}
                   <input type="text" placeholder="Tech Name" value={tech.name} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, name: e.target.value }})} style={{...inputStyle, margin: '4px 0'}} />
                   <input type="tel" placeholder="Tech Mobile" value={tech.mobile} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, mobile: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                  <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
+                  <button onClick={() => acceptRequest(req._id, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
                 </div>
               );
             })}
