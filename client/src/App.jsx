@@ -357,8 +357,8 @@ function App() {
     : requests.filter(r => r.category === filterCategory);
 
   const newComplaintJobs = requests.filter(r => r.status === 'New');
-  const acceptedJobs = requests.filter(r => r.status === 'Accepted');
   const inProgressJobs = requests.filter(r => r.status === 'In Progress');
+  const progressJobs = requests.filter(r => r.status === 'Accepted' || r.status === 'In Progress');
   const completedJobs = requests.filter(r => r.status === 'Completed');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
@@ -690,14 +690,14 @@ function App() {
         {activeTab === 'electrician-in-progress' && (
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complaint Progress</h3>
-            {requests.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
-            ) : requests.map(req => (
+            {progressJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No accepted or in-progress complaints.</p>
+            ) : progressJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <strong>{req.requestId} - {req.category}</strong>
-                  <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
-                    <b>{req.status === 'Completed' ? 'Completed' : 'Not completed'}</b>
+                  <span style={{ color: req.status === 'In Progress' ? '#276749' : '#084298' }}>
+                    <b>{req.status}</b>
                   </span>
                 </div>
                 <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
