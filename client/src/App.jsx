@@ -355,10 +355,11 @@ function App() {
   const filteredRequests = filterCategory === 'All' 
     ? requests 
     : requests.filter(r => r.category === filterCategory);
+  const normalizeStatus = status => typeof status === 'string' ? status.trim().toLowerCase() : '';
 
   const newComplaintJobs = requests.filter(r => r.status === 'New');
-  const inProgressJobs = requests.filter(r => r.status === 'In Progress');
-  const progressJobs = requests.filter(r => r.status === 'Accepted' || r.status === 'In Progress');
+  const inProgressJobs = requests.filter(r => normalizeStatus(r.status) === 'in progress');
+  const progressJobs = requests.filter(r => ['accepted', 'in progress'].includes(normalizeStatus(r.status)));
   const completedJobs = requests.filter(r => r.status === 'Completed');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
@@ -718,7 +719,7 @@ function App() {
                     </a>
                   </div>
                 )}
-                {req.status === 'Accepted' && (
+                {normalizeStatus(req.status) === 'accepted' && (
                   <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Start</button>
                 )}
               </div>
