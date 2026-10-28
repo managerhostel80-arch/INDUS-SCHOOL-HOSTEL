@@ -24,7 +24,7 @@ function App() {
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('admin-dashboard');
   const [requests, setRequests] = useState([]);
-  const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
+  const [stats, setStats] = useState({ new: 0, accepted: 0, completed: 0 });
   const [team, setTeam] = useState([]);
   const [filterCategory, setFilterCategory] = useState('All');
   const [submittedRequest, setSubmittedRequest] = useState(null);
@@ -358,8 +358,7 @@ function App() {
   const normalizeStatus = status => typeof status === 'string' ? status.trim().toLowerCase() : '';
 
   const newComplaintJobs = requests.filter(r => r.status === 'New');
-  const inProgressJobs = requests.filter(r => normalizeStatus(r.status) === 'in progress');
-  const progressJobs = requests.filter(r => ['accepted', 'in progress'].includes(normalizeStatus(r.status)));
+  const completionJobs = requests.filter(r => ['accepted', 'in progress'].includes(normalizeStatus(r.status)));
   const completedJobs = requests.filter(r => r.status === 'Completed');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
@@ -487,7 +486,6 @@ function App() {
             <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
             <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
             <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
-            <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>In Progress</button>
             <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete Work</button>
             <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
           </div>
@@ -531,18 +529,14 @@ function App() {
           <div className="dashboard-overview">
             <h3 className="dashboard-title" style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Dashboard</h3>
             
-            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', marginBottom: '12px' }}>
               <div className="dashboard-stat-card dashboard-stat-new" onClick={() => setActiveTab('new-complaint-view')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
               </div>
-              <div className="dashboard-stat-card dashboard-stat-accepted" onClick={() => setActiveTab('dashboard')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <div className="dashboard-stat-card dashboard-stat-accepted" onClick={() => setActiveTab('electrician-completion')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>ACCEPTED</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.accepted}</div>
-              </div>
-              <div className="dashboard-stat-card dashboard-stat-progress" onClick={() => setActiveTab('electrician-in-progress')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
-                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>IN PROGRESS</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.inProgress}</div>
               </div>
               <div className="dashboard-stat-card dashboard-stat-completed" onClick={() => setActiveTab('completed-status')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>COMPLETED</div>
@@ -661,7 +655,6 @@ function App() {
               {[
                 ['New', '#fff3cd', '#664d03'],
                 ['Accepted', '#cfe2ff', '#084298'],
-                ['In Progress', '#e2f0d9', '#276749'],
                 ['Completed', '#d1e7dd', '#0f5132']
               ].map(([status, background, color]) => (
                 <div key={status} style={{ background, color, padding: '8px', borderRadius: '6px' }}>
@@ -687,53 +680,13 @@ function App() {
           </div>
         )}
 
-        {/* IN PROGRESS TAB */}
-        {activeTab === 'electrician-in-progress' && (
-          <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complaint Progress</h3>
-            {progressJobs.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No accepted or in-progress complaints.</p>
-            ) : progressJobs.map(req => (
-              <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong>{req.requestId} - {req.category}</strong>
-                  <span style={{ color: req.status === 'In Progress' ? '#276749' : '#084298' }}>
-                    <b>{req.status}</b>
-                  </span>
-                </div>
-                <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
-                <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
-                {req.photo && (
-                  <div style={{ margin: '8px 0' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
-                    <a
-                      href={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <img
-                        src={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
-                        alt={`Complaint photo for ${req.requestId}`}
-                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
-                      />
-                    </a>
-                  </div>
-                )}
-                {normalizeStatus(req.status) === 'accepted' && (
-                  <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Start</button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* COMPLETION TAB */}
         {activeTab === 'electrician-completion' && (
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complete Complaints</h3>
-            {inProgressJobs.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No complaints are currently in progress.</p>
-            ) : inProgressJobs.map(req => (
+            {completionJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No accepted complaints are waiting to be completed.</p>
+            ) : completionJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <strong>{req.requestId} - {req.category}</strong>
                 {renderRequestDetails(req)}
