@@ -208,8 +208,12 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
+      if (!itemComp.completionPhoto) {
+        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
+        return;
+      }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
-      if (itemComp.completionPhoto) data.append('completionPhoto', itemComp.completionPhoto);
+      data.append('completionPhoto', itemComp.completionPhoto);
     }
 
     try {
@@ -677,58 +681,77 @@ function App() {
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Work in Progress</h3>
             {requests.length === 0 ? (
               <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
-            ) : requests.map(req => (
-              <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong>{req.requestId} - {req.category}</strong>
-                  <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
-                    <b>{req.status === 'Completed' ? 'Completed' : req.status}</b>
-                  </span>
-                </div>
-                <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
-                <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
-                {req.photo && (
-                  <div style={{ margin: '8px 0' }}>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
-                    <a
-                      href={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      <img
-                        src={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
-                        alt={`Complaint photo for ${req.requestId}`}
-                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+            ) : requests.map(req => {
+              const hasCompletedPhoto = Boolean(completionData[req._id]?.completionPhoto);
+              return (
+                <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <strong>{req.requestId} - {req.category}</strong>
+                    <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
+                      <b>{req.status === 'Completed' ? 'Completed' : req.status}</b>
+                    </span>
+                  </div>
+                  <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+                  <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
+                  {req.photo && (
+                    <div style={{ margin: '8px 0' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+                      <a
+                        href={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          src={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
+                          alt={`Complaint photo for ${req.requestId}`}
+                          style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                        />
+                      </a>
+                    </div>
+                  )}
+                  {req.status === 'Accepted' && (
+                    <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
+                  )}
+                  {req.status === 'In Progress' && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                        Upload completed work photo (Required to enable Mark Done):
+                      </label>
+                      <input
+                        id={`completion-photo-${req._id}`}
+                        type="file"
+                        accept="image/*"
+                        onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
+                        style={{...inputStyle, margin: '4px 0'}}
                       />
-                    </a>
-                  </div>
-                )}
-                {req.status === 'Accepted' && (
-                  <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
-                )}
-                {req.status === 'In Progress' && (
-                  <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                    <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                      Upload completed work photo & mark done:
-                    </label>
-                    <input
-                      id={`completion-photo-${req._id}`}
-                      type="file"
-                      accept="image/*"
-                      onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
-                      style={{...inputStyle, margin: '4px 0'}}
-                    />
-                    <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                    <button
-                      onClick={() => updateStatus(req._id, 'Completed', true)}
-                      style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                      Mark Done
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+                      {hasCompletedPhoto && (
+                        <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                          ✓ Completed photo attached: {completionData[req._id].completionPhoto.name}
+                        </p>
+                      )}
+                      <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
+                      <button
+                        onClick={() => updateStatus(req._id, 'Completed', true)}
+                        disabled={!hasCompletedPhoto}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          background: hasCompletedPhoto ? '#198754' : '#6c757d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                          cursor: hasCompletedPhoto ? 'pointer' : 'not-allowed',
+                          opacity: hasCompletedPhoto ? 1 : 0.65
+                        }}
+                      >
+                        {hasCompletedPhoto ? 'Mark Done' : 'Upload Completed Photo to Enable'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
