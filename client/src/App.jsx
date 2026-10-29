@@ -100,7 +100,7 @@ function App() {
     } else if (username === 'staff' && password === 'user123') {
       setUserRole('user');
       setIsLoggedIn(true);
-      setActiveTab('report'); // Default staff to Report a Problem since dashboard is hidden
+      setActiveTab('report'); 
       setLoginError('');
     } else {
       setLoginError('Incorrect username or password. Please try again.');
@@ -208,12 +208,8 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
-      if (!itemComp.completionPhoto) {
-        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
-        return;
-      }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
-      data.append('completionPhoto', itemComp.completionPhoto);
+      if (itemComp.completionPhoto) data.append('completionPhoto', itemComp.completionPhoto);
     }
 
     try {
@@ -231,12 +227,6 @@ function App() {
     } catch (err) {
       console.error('Update status error:', err);
     }
-  };
-
-  // Handles clicking "Start" from In Progress -> Updates status and redirects to Complete Work tab
-  const handleStartWork = async (id) => {
-    await updateStatus(id, 'In Progress');
-    setActiveTab('electrician-completion');
   };
 
   const handleTeamSubmit = async (e) => {
@@ -473,7 +463,7 @@ function App() {
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
         </h3>
         
-        {/* Navigation Tabs Bar (Role Filtered) */}
+        {/* Navigation Tabs Bar */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
           <div className="app-nav-row app-nav-row-primary">
             {userRole === 'admin' && (
@@ -482,8 +472,7 @@ function App() {
             <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
             <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
             <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
-            <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>In Progress</button>
-            <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete Work</button>
+            <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>Work in Progress</button>
             <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
           </div>
           <div className="app-nav-row app-nav-row-secondary">
@@ -536,7 +525,7 @@ function App() {
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.accepted}</div>
               </div>
               <div onClick={() => setActiveTab('electrician-in-progress')} style={{ background: '#e2f0d9', color: '#276749', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
-                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>IN PROGRESS</div>
+                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>WORK IN PROGRESS</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.inProgress}</div>
               </div>
               <div onClick={() => setActiveTab('completed-status')} style={{ background: '#d1e7dd', color: '#0f5132', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
@@ -656,7 +645,7 @@ function App() {
               {[
                 ['New', '#fff3cd', '#664d03'],
                 ['Accepted', '#cfe2ff', '#084298'],
-                ['In Progress', '#e2f0d9', '#276749'],
+                ['Work in Progress', '#e2f0d9', '#276749'],
                 ['Completed', '#d1e7dd', '#0f5132']
               ].map(([status, background, color]) => (
                 <div key={status} style={{ background, color, padding: '8px', borderRadius: '6px' }}>
@@ -682,10 +671,10 @@ function App() {
           </div>
         )}
 
-        {/* IN PROGRESS TAB */}
+        {/* WORK IN PROGRESS TAB */}
         {activeTab === 'electrician-in-progress' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complaint Progress</h3>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Work in Progress</h3>
             {requests.length === 0 ? (
               <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
             ) : requests.map(req => (
@@ -693,7 +682,7 @@ function App() {
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <strong>{req.requestId} - {req.category}</strong>
                   <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
-                    <b>{req.status === 'Completed' ? 'Completed' : 'Not completed'}</b>
+                    <b>{req.status === 'Completed' ? 'Completed' : req.status}</b>
                   </span>
                 </div>
                 <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
@@ -715,46 +704,29 @@ function App() {
                   </div>
                 )}
                 {req.status === 'Accepted' && (
-                  <button onClick={() => handleStartWork(req._id)} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
+                  <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                 )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* COMPLETION TAB */}
-        {activeTab === 'electrician-completion' && (
-          <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complete Complaints</h3>
-            {inProgressJobs.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No complaints are currently in progress.</p>
-            ) : inProgressJobs.map(req => (
-              <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-                <strong>{req.requestId} - {req.category}</strong>
-                {renderRequestDetails(req)}
-                <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '8px' }}>
-                  Upload photo of completed work (required)
-                </label>
-                <input
-                  id={`completion-photo-${req._id}`}
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
-                  style={{...inputStyle, margin: '4px 0'}}
-                />
-                {completionData[req._id]?.completionPhoto && (
-                  <p style={{ margin: '0 0 6px', color: '#198754' }}>
-                    Selected: {completionData[req._id].completionPhoto.name}
-                  </p>
+                {req.status === 'In Progress' && (
+                  <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                    <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                      Upload completed work photo & mark done:
+                    </label>
+                    <input
+                      id={`completion-photo-${req._id}`}
+                      type="file"
+                      accept="image/*"
+                      onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
+                      style={{...inputStyle, margin: '4px 0'}}
+                    />
+                    <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
+                    <button
+                      onClick={() => updateStatus(req._id, 'Completed', true)}
+                      style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Mark Done
+                    </button>
+                  </div>
                 )}
-                <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                <button
-                  onClick={() => updateStatus(req._id, 'Completed', true)}
-                  disabled={!completionData[req._id]?.completionPhoto}
-                  style={{ width: '100%', padding: '8px', background: completionData[req._id]?.completionPhoto ? '#198754' : '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: completionData[req._id]?.completionPhoto ? 'pointer' : 'not-allowed' }}
-                >
-                  Mark Done
-                </button>
               </div>
             ))}
           </div>
