@@ -8,10 +8,20 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  event.waitUntil(self.registration.showNotification(notification.title || 'Hostel maintenance update', {
+  const options = {
     body: notification.body || 'A new maintenance complaint was submitted.',
+    vibrate: [200, 100, 200], // Makes mobile phones vibrate when alert arrives
+    tag: notification.tag || 'hostel-maintenance-alert', // Groups/manages notifications cleanly
+    renotify: true,
     data: { url: notification.url || '/' }
-  }));
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(
+      notification.title || 'Hostel maintenance update', 
+      options
+    )
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
@@ -19,12 +29,19 @@ self.addEventListener('notificationclick', (event) => {
   const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
   event.waitUntil((async () => {
-    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    const appClient = clients.find(client => new URL(client.url).origin === self.location.origin);
-    if (appClient) {
-      await appClient.navigate(targetUrl);
-      return appClient.focus();
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    
+    // Check if the app is already open in a tab or PWA shortcut window
+    for (const client of clientList) {
+      if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+        await client.navigate(targetUrl);
+        return client.focus();
+      }
     }
-    return self.clients.openWindow(targetUrl);
+    
+    // If not open, launch a new window from the shortcut context
+    if (self.clients.openWindow) {
+      return self.clients.openWindow(targetUrl);
+    }
   })());
 });
