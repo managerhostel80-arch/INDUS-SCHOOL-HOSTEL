@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
-const PUBLIC_ASSET_BASE = import.meta.env.BASE_URL;
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -24,7 +23,7 @@ function App() {
   const [loginError, setLoginError] = useState('');
   const [activeTab, setActiveTab] = useState('admin-dashboard');
   const [requests, setRequests] = useState([]);
-  const [stats, setStats] = useState({ new: 0, accepted: 0, completed: 0 });
+  const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
   const [team, setTeam] = useState([]);
   const [filterCategory, setFilterCategory] = useState('All');
   const [submittedRequest, setSubmittedRequest] = useState(null);
@@ -211,7 +210,7 @@ function App() {
       const itemComp = completionData[id] || {};
       if (!itemComp.completionPhoto) {
         window.alert('Please upload a photo of the completed work before marking this complaint as done.');
-        return false;
+        return;
       }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
       data.append('completionPhoto', itemComp.completionPhoto);
@@ -225,20 +224,19 @@ function App() {
       const result = await res.json();
       if (!res.ok || !result.success) {
         window.alert(result.error || 'Could not update the request.');
-        return false;
+        return;
       }
 
       await fetchData();
-      return true;
     } catch (err) {
       console.error('Update status error:', err);
-      return false;
     }
   };
 
-  const acceptRequest = async (id, name, mobile) => {
-    const updated = await updateStatus(id, 'Accepted', false, name, mobile);
-    if (updated) setActiveTab('electrician-completion');
+  // Handles clicking "Start" from In Progress -> Updates status and redirects to Complete Work tab
+  const handleStartWork = async (id) => {
+    await updateStatus(id, 'In Progress');
+    setActiveTab('electrician-completion');
   };
 
   const handleTeamSubmit = async (e) => {
@@ -276,26 +274,17 @@ function App() {
     }
   };
 
-  const handleDeleteRequests = async (status) => {
-    const isAll = status === 'All';
-    const description = isAll ? 'ALL requests' : `all ${status} requests`;
-    if (!window.confirm(`WARNING: This will permanently delete ${description}. This cannot be undone.`)) return;
-
+  const handleClearDatabase = async () => {
+    if (!window.confirm('WARNING: This will delete ALL maintenance requests from MongoDB permanently.')) return;
     try {
-      const url = isAll
-        ? `${API_BASE_URL}/api/requests/clear-requests`
-        : `${API_BASE_URL}/api/requests/status/${encodeURIComponent(status)}`;
-      const res = await fetch(url, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE_URL}/api/db/clear-requests`, { method: 'DELETE' });
       const result = await res.json();
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || `Could not delete ${description}.`);
+      if (result.success) {
+        alert(result.message);
+        await fetchData();
       }
-
-      window.alert(result.message || `${description} deleted successfully.`);
-      await fetchData();
     } catch (err) {
-      console.error(`Error deleting ${description}:`, err);
-      window.alert(err.message || `Could not delete ${description}.`);
+      console.error('Error clearing database:', err);
     }
   };
 
@@ -362,10 +351,10 @@ function App() {
   const filteredRequests = filterCategory === 'All' 
     ? requests 
     : requests.filter(r => r.category === filterCategory);
-  const normalizeStatus = status => typeof status === 'string' ? status.trim().toLowerCase() : '';
 
   const newComplaintJobs = requests.filter(r => r.status === 'New');
-  const completionJobs = requests.filter(r => ['accepted', 'in progress'].includes(normalizeStatus(r.status)));
+  const acceptedJobs = requests.filter(r => r.status === 'Accepted');
+  const inProgressJobs = requests.filter(r => r.status === 'In Progress');
   const completedJobs = requests.filter(r => r.status === 'Completed');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
@@ -385,7 +374,7 @@ function App() {
           justifyContent: 'center',
           padding: '16px',
           boxSizing: 'border-box',
-          background: `linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.35)), url("${PUBLIC_ASSET_BASE}school-background.png") center / cover no-repeat`,
+          background: 'linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.35)), url("/school-background.jpg") center / cover no-repeat',
           fontFamily: 'Arial, sans-serif'
         }}
       >
@@ -401,16 +390,18 @@ function App() {
           }}
         >
           <header style={{ marginBottom: '24px', textAlign: 'center' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'clamp(28px, 10vw, 45px) minmax(0, 1fr) clamp(28px, 10vw, 45px)', alignItems: 'center', gap: '8px', marginBottom: '0' }}>
-              <img src={`${PUBLIC_ASSET_BASE}school-logo-left.png`} alt="Logo Left" style={{ width: '100%', aspectRatio: '1', objectFit: 'contain' }} />
-              <h1 style={{ margin: 0, color: '#1e40af', fontSize: 'clamp(7px, 2.8vw, 14px)', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                Montessori Indus Residential School
-              </h1>
-              <img src={`${PUBLIC_ASSET_BASE}school-logo-right.jpg`} alt="Logo Right" style={{ width: '100%', aspectRatio: '1', objectFit: 'contain' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+              <img src="/school-logo-left.png" alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+                <h1 style={{ margin: '0 0 4px 0', color: '#1e40af', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                  Montessori Indus Residential School
+                </h1>
+                <p style={{ margin: 0, color: '#333', fontSize: '7px', fontWeight: 'bold' }}>
+                  Hostel 360 – Maintenance System
+                </p>
+              </div>
+              <img src="/school-logo-right.jpg" alt="Logo Right" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
             </div>
-            <p style={{ margin: '0 0 12px', color: '#333', fontSize: '7px', fontWeight: 'bold', lineHeight: 1 }}>
-              Hostel 360 – Maintenance System
-            </p>
           </header>
 
           <form onSubmit={handleLoginSubmit}>
@@ -473,26 +464,25 @@ function App() {
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f1f5f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Header with School Name */}
-      <header className="app-header" style={{ background: '#12304a', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
-        <div className="school-branding">
-          <h2 className="school-name">Montessori Indus Residential School</h2>
-          <h3 className="school-caption">
-            Hostel 360 – Maintenance System
-          </h3>
-        </div>
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center', whiteSpace: 'nowrap' }}>Montessori Indus Residential School</h2>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: '7.5px', opacity: 0.95, fontWeight: 'bold', textAlign: 'center' }}>
+          Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
+        </h3>
         
         {/* Navigation Tabs Bar (Role Filtered) */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
           <div className="app-nav-row app-nav-row-primary">
             {userRole === 'admin' && (
-              <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Dashboard</button>
+              <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
             )}
             <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
             <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
             <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
+            <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>In Progress</button>
             <button onClick={() => setActiveTab('electrician-completion')} style={navTabStyle(activeTab === 'electrician-completion')}>Complete Work</button>
             <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
           </div>
@@ -534,44 +524,48 @@ function App() {
         {/* DASHBOARD TAB (Admin Only) */}
         {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
-            <h3 className="dashboard-title" style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Dashboard</h3>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
             
-            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px', marginBottom: '12px' }}>
-              <div className="dashboard-stat-card dashboard-stat-new" onClick={() => setActiveTab('new-complaint-view')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+              <div onClick={() => setActiveTab('new-complaint-view')} style={{ background: '#fff3cd', color: '#664d03', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
               </div>
-              <div className="dashboard-stat-card dashboard-stat-accepted" onClick={() => setActiveTab('electrician-completion')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <div onClick={() => setActiveTab('dashboard')} style={{ background: '#cfe2ff', color: '#084298', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>ACCEPTED</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.accepted}</div>
               </div>
-              <div className="dashboard-stat-card dashboard-stat-completed" onClick={() => setActiveTab('completed-status')} style={{ padding: '10px', borderRadius: '8px', cursor: 'pointer' }}>
+              <div onClick={() => setActiveTab('electrician-in-progress')} style={{ background: '#e2f0d9', color: '#276749', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>IN PROGRESS</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.inProgress}</div>
+              </div>
+              <div onClick={() => setActiveTab('completed-status')} style={{ background: '#d1e7dd', color: '#0f5132', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
                 <div style={{ fontSize: '10px', fontWeight: 'bold' }}>COMPLETED</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{completedJobs.length}</div>
               </div>
             </div>
 
-            <h4 className="dashboard-section-title" style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
+            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
             <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                <button key={cat} className={filterCategory === cat ? 'dashboard-filter-active' : ''} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}>
+                <button key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0d6efd' : 'white', color: filterCategory === cat ? 'white' : '#333', border: '1px solid #ccc', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>
                   {cat}
                 </button>
               ))}
             </div>
 
             <section className="dashboard-request-summary">
-              <h4 className="dashboard-section-title" style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
+              <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
               {filteredRequests.length === 0 ? (
                 <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
               ) : (
                 filteredRequests.map(req => (
-                  <div key={req._id} className="dashboard-request-card" style={{ padding: '10px', borderRadius: '8px', marginBottom: '8px' }}>
+                  <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
                       {getUrgencyBadge(req.urgencyLevel)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#475569', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
                       <p style={{ margin: '3px 0' }}>Status: {req.status}</p>
                       {renderRequestDetails(req)}
                     </div>
@@ -645,7 +639,7 @@ function App() {
                   {renderRequestDetails(req)}
                   <input type="text" placeholder="Tech Name" value={tech.name} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, name: e.target.value }})} style={{...inputStyle, margin: '4px 0'}} />
                   <input type="tel" placeholder="Tech Mobile" value={tech.mobile} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, mobile: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
-                  <button onClick={() => acceptRequest(req._id, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
+                  <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
                 </div>
               );
             })}
@@ -662,6 +656,7 @@ function App() {
               {[
                 ['New', '#fff3cd', '#664d03'],
                 ['Accepted', '#cfe2ff', '#084298'],
+                ['In Progress', '#e2f0d9', '#276749'],
                 ['Completed', '#d1e7dd', '#0f5132']
               ].map(([status, background, color]) => (
                 <div key={status} style={{ background, color, padding: '8px', borderRadius: '6px' }}>
@@ -687,13 +682,53 @@ function App() {
           </div>
         )}
 
+        {/* IN PROGRESS TAB */}
+        {activeTab === 'electrician-in-progress' && (
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complaint Progress</h3>
+            {requests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
+            ) : requests.map(req => (
+              <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong>{req.requestId} - {req.category}</strong>
+                  <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
+                    <b>{req.status === 'Completed' ? 'Completed' : 'Not completed'}</b>
+                  </span>
+                </div>
+                <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
+                {req.photo && (
+                  <div style={{ margin: '8px 0' }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+                    <a
+                      href={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <img
+                        src={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
+                        alt={`Complaint photo for ${req.requestId}`}
+                        style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                      />
+                    </a>
+                  </div>
+                )}
+                {req.status === 'Accepted' && (
+                  <button onClick={() => handleStartWork(req._id)} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* COMPLETION TAB */}
         {activeTab === 'electrician-completion' && (
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Complete Complaints</h3>
-            {completionJobs.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No accepted complaints are waiting to be completed.</p>
-            ) : completionJobs.map(req => (
+            {inProgressJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints are currently in progress.</p>
+            ) : inProgressJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <strong>{req.requestId} - {req.category}</strong>
                 {renderRequestDetails(req)}
@@ -789,19 +824,7 @@ function App() {
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b> | Team: <b>{dbStats.teamMembers}</b></p>
-            <h4 style={{ margin: '16px 0 8px', fontSize: '13px' }}>Delete Requests</h4>
-            <p style={{ margin: '0 0 8px', color: '#475569' }}>Permanently delete requests by status. This action cannot be undone.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
-              {['Completed', 'In Progress', 'Accepted', 'All'].map(status => (
-                <button
-                  key={status}
-                  onClick={() => handleDeleteRequests(status)}
-                  style={{ padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
-                >
-                  Delete {status}
-                </button>
-              ))}
-            </div>
+            <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
           </div>
         )}
 
@@ -819,14 +842,13 @@ function App() {
 }
 
 const navTabStyle = (active) => ({
-  background: active ? '#0f9488' : '#334e68',
+  background: active ? '#0b5ed7' : '#1e3a8a',
   color: 'white',
   border: 'none',
-  padding: '9px 10px',
-  minHeight: '40px',
-  borderRadius: '6px',
+  padding: '6px 10px',
+  borderRadius: '4px',
   cursor: 'pointer',
-  fontSize: '12px',
+  fontSize: '11px',
   whiteSpace: 'nowrap',
   flexShrink: 0,
   fontWeight: 'bold'
