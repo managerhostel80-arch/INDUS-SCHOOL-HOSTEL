@@ -10,8 +10,6 @@ self.addEventListener('push', (event) => {
 
   event.waitUntil(self.registration.showNotification(notification.title || 'Hostel maintenance update', {
     body: notification.body || 'A new maintenance complaint was submitted.',
-    icon: '/icons/maintenance.svg',
-    badge: '/icons/maintenance.svg',
     data: { url: notification.url || '/' }
   }));
 });
