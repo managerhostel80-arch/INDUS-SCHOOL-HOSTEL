@@ -311,7 +311,18 @@ function App() {
             <img
               src={photoUrl}
               alt={alt}
-              style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '180px', objectFit: 'contain' }}
+              style={{ 
+                display: 'block', 
+                width: 'auto', 
+                height: 'auto', 
+                maxWidth: '100%', 
+                maxHeight: '180px', 
+                objectFit: 'contain',
+                border: '2px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '2px',
+                background: '#ffffff'
+              }}
             />
           </a>
         ) : (
@@ -774,7 +785,7 @@ function App() {
                   Completed at: {req.completedAt ? new Date(req.completedAt).toLocaleString() : 'N/A'}
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
-                <div className="completed-photo-grid">
+                <div className="completed-photo-grid" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
