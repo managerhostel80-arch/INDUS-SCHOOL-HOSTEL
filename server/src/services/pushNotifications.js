@@ -30,18 +30,25 @@ exports.notifyNewRequest = async (request) => {
 
   const payload = JSON.stringify({
     title: 'New maintenance complaint',
-    body: `${request.requestId}: ${request.category} — ${request.location}`,
+    body: `${request.requestId || 'REQ'}: ${request.category || 'General'} — ${request.location || 'Hostel'}`,
     url: '/'
   });
 
   const results = await Promise.allSettled(subscriptions.map(async (subscription) => {
     try {
-      await webpush.sendNotification({
+      // Safely structure the subscription object for web-push
+      const pushSub = {
         endpoint: subscription.endpoint,
-        keys: subscription.keys
-      }, payload);
+        keys: {
+          p256dh: subscription.keys?.p256dh,
+          auth: subscription.keys?.auth
+        }
+      };
+
+      await webpush.sendNotification(pushSub, payload);
       return true;
     } catch (err) {
+      console.error(`Detailed Push Error for sub ${subscription._id}:`, err.message, err.body || '');
       if (err.statusCode === 404 || err.statusCode === 410) {
         await PushSubscription.deleteOne({ _id: subscription._id });
         return false;
@@ -62,7 +69,7 @@ exports.notifyNewRequest = async (request) => {
     if (result.status === 'rejected') {
       console.error(
         `Push notification failed for subscription ${subscription._id}; user agent: ${userAgent}; status: ${result.reason?.statusCode || 'unknown'}`,
-        result.reason
+        result.reason?.message || result.reason
       );
     } else if (result.value) {
       console.info(
