@@ -142,6 +142,7 @@ function App() {
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
       const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
+      
       if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
         await subscription.unsubscribe();
         subscription = null;
@@ -165,6 +166,7 @@ function App() {
       }
 
       setPushStatus('Notifications enabled on this device.');
+      alert('Notifications enabled successfully on this device!');
     } catch (err) {
       console.error('Unable to enable notifications:', err);
       setPushStatus(err.message || 'Could not enable notifications on this device.');
@@ -295,6 +297,10 @@ function App() {
     );
   };
 
+  const getPhotoUrl = (photo) => (
+    photo ? (photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`) : null
+  );
+
   const renderPhoto = (label, photo, alt, showLabel = true) => {
     const photoUrl = getPhotoUrl(photo);
     return (
@@ -309,9 +315,7 @@ function App() {
             />
           </a>
         ) : (
-          <span style={{ color: '#666' }}>
-            Photo not available
-          </span>
+          <span style={{ color: '#666' }}>Photo not available</span>
         )}
       </div>
     );
@@ -354,9 +358,6 @@ function App() {
     counts[request.status] = (counts[request.status] || 0) + 1;
     return counts;
   }, {});
-  const getPhotoUrl = (photo) => (
-    photo ? (photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`) : null
-  );
 
   if (!isLoggedIn) {
     return (
@@ -451,7 +452,6 @@ function App() {
               Log in
             </button>
           </form>
-
         </section>
       </main>
     );
@@ -697,12 +697,12 @@ function App() {
                     <div style={{ margin: '8px 0' }}>
                       <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
                       <a
-                        href={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
+                        href={getPhotoUrl(req.photo)}
                         target="_blank"
                         rel="noreferrer"
                       >
                         <img
-                          src={req.photo.startsWith('http') ? req.photo : `${API_BASE_URL}${req.photo}`}
+                          src={getPhotoUrl(req.photo)}
                           alt={`Complaint photo for ${req.requestId}`}
                           style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
                         />
