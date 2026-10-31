@@ -52,6 +52,29 @@ function App() {
   const [dbStats, setDbStats] = useState({ requests: 0, teamMembers: 0 });
   const [pushStatus, setPushStatus] = useState('');
   const [isEnablingPush, setIsEnablingPush] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
+
+  // Live IST Clock for specific tabs
+  useEffect(() => {
+    const updateISTClock = () => {
+      const now = new Date();
+      const options = {
+        timeZone: 'Asia/Kolkata',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      };
+      setCurrentTime(new Intl.DateTimeFormat('en-IN', options).format(now));
+    };
+
+    updateISTClock();
+    const interval = setInterval(updateISTClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -474,9 +497,16 @@ function App() {
       {/* Header with School Name */}
       <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
         <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center', whiteSpace: 'nowrap' }}>Montessori Indus Residential School</h2>
-        <h3 style={{ margin: '0 0 8px 0', fontSize: '7.5px', opacity: 0.95, fontWeight: 'bold', textAlign: 'center' }}>
+        <h3 style={{ margin: '0 0 4px 0', fontSize: '7.5px', opacity: 0.95, fontWeight: 'bold', textAlign: 'center' }}>
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
         </h3>
+
+        {/* Live IST Clock (Only shown in New Complaints, All Requests, Work in Progress, and Completed tabs) */}
+        {['new-complaint-view', 'dashboard', 'electrician-in-progress', 'completed-status'].includes(activeTab) && currentTime && (
+          <div style={{ margin: '2px 0 6px 0', fontSize: '10px', background: 'rgba(0, 0, 0, 0.25)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+            IST: {currentTime}
+          </div>
+        )}
         
         {/* Navigation Tabs Bar */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
