@@ -16,22 +16,31 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
-// Helper function to format any date string into strict Day-Month-Year format (DD/MM/YYYY, HH:MM:SS am/pm)
+// Strict custom formatter for Day-Month-Year (DD/MM/YYYY)
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString; // fallback if invalid
+  if (isNaN(date.getTime())) return dateString;
 
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Asia/Kolkata',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: true
-  }).format(date);
+  const options = { timeZone: 'Asia/Kolkata', hour12: true };
+  
+  const day = String(date.toLocaleString('en-IN', { ...options, day: '2-digit' })).replace(/\D/g, '').slice(-2) || String(date.getDate()).padStart(2, '0');
+  const month = String(date.toLocaleString('en-IN', { ...options, month: '2-digit' })).replace(/\D/g, '').slice(-2) || String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.toLocaleString('en-IN', { ...options, year: 'numeric' }).replace(/\D/g, '').slice(-4) || date.getFullYear();
+  
+  const timeStr = date.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
+
+  return `${day}/${month}/${year}, ${timeStr}`;
+};
+
+const formatLiveClock = (date) => {
+  const options = { timeZone: 'Asia/Kolkata' };
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const timeStr = date.toLocaleTimeString('en-IN', { ...options, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  
+  return `${day}/${month}/${year} - ${timeStr}`;
 };
 
 function App() {
@@ -72,11 +81,10 @@ function App() {
   const [isEnablingPush, setIsEnablingPush] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
 
-  // Live IST Clock formatted as DD/MM/YYYY for specific tabs
   useEffect(() => {
     const updateISTClock = () => {
       const now = new Date();
-      setCurrentTime(formatDMYDate(now));
+      setCurrentTime(formatLiveClock(now));
     };
 
     updateISTClock();
@@ -351,7 +359,7 @@ function App() {
                 objectFit: 'contain',
                 border: '2px solid #cbd5e1',
                 borderRadius: '6px',
-                padding: '2px',
+                padding: '4px',
                 background: '#ffffff'
               }}
             />
@@ -509,7 +517,7 @@ function App() {
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
         </h3>
 
-        {/* Live IST Clock in DD/MM/YYYY format (Only shown in specified tabs) */}
+        {/* Live IST Clock in DD/MM/YYYY format */}
         {['new-complaint-view', 'dashboard', 'electrician-in-progress', 'completed-status'].includes(activeTab) && currentTime && (
           <div style={{ margin: '2px 0 6px 0', fontSize: '10px', background: 'rgba(0, 0, 0, 0.25)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
             IST (DD/MM/YYYY): {currentTime}
@@ -823,7 +831,9 @@ function App() {
                   Completed at: {formatDMYDate(req.completedAt)}
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
-                <div className="completed-photo-grid" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+                
+                {/* 2 Images with explicit borders side-by-side */}
+                <div className="completed-photo-grid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
