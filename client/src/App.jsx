@@ -16,7 +16,7 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
-// Bulletproof DD/MM/YYYY Date Formatter (Handles MongoDB ISO strings safely)
+// 100% Guaranteed DD/MM/YYYY Manual Formatter (Strict day/month order)
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
@@ -357,7 +357,7 @@ function App() {
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
             <div style={{
-              border: '4px solid #0056b3', // Thick, prominent blue border box frame
+              border: '4px solid #0056b3', // Prominent blue border frame
               borderRadius: '8px',
               padding: '6px',
               background: '#ffffff',
