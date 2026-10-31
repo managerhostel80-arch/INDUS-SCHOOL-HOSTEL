@@ -16,7 +16,7 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
-// 100% Guaranteed DD/MM/YYYY Manual Formatter (Strict day/month order)
+// Strict manual DD/MM/YYYY Formatter
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
@@ -345,9 +345,12 @@ function App() {
     );
   };
 
-  const getPhotoUrl = (photo) => (
-    photo ? (photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`) : null
-  );
+  const getPhotoUrl = (photo) => {
+    if (!photo) return null;
+    const base = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
+    // Appends cache-busting timestamp so browser forces border updates
+    return `${base}?t=${Date.now()}`;
+  };
 
   const renderPhoto = (label, photo, alt, showLabel = true) => {
     const photoUrl = getPhotoUrl(photo);
@@ -357,7 +360,7 @@ function App() {
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
             <div style={{
-              border: '4px solid #0056b3', // Prominent blue border frame
+              border: '4px solid #0056b3', // Thick, prominent blue border box frame
               borderRadius: '8px',
               padding: '6px',
               background: '#ffffff',
