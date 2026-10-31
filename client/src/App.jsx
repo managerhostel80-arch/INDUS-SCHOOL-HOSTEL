@@ -16,6 +16,24 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
+// Helper function to format any date string into strict Day-Month-Year format (DD/MM/YYYY, HH:MM:SS am/pm)
+const formatDMYDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString; // fallback if invalid
+
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  }).format(date);
+};
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(''); // 'admin' or 'user'
@@ -54,21 +72,11 @@ function App() {
   const [isEnablingPush, setIsEnablingPush] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
 
-  // Live IST Clock for specific tabs
+  // Live IST Clock formatted as DD/MM/YYYY for specific tabs
   useEffect(() => {
     const updateISTClock = () => {
       const now = new Date();
-      const options = {
-        timeZone: 'Asia/Kolkata',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      };
-      setCurrentTime(new Intl.DateTimeFormat('en-IN', options).format(now));
+      setCurrentTime(formatDMYDate(now));
     };
 
     updateISTClock();
@@ -363,7 +371,7 @@ function App() {
         <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
         <p style={{ margin: '3px 0' }}>Mobile: {req.reportedByMobile || 'N/A'}</p>
         <p style={{ margin: '3px 0' }}>
-          Reported at: {req.reportedAt ? new Date(req.reportedAt).toLocaleString() : 'N/A'}
+          Reported at: {formatDMYDate(req.reportedAt)}
         </p>
         {(req.assignedName || req.assignedMobile) && (
           <>
@@ -501,10 +509,10 @@ function App() {
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
         </h3>
 
-        {/* Live IST Clock (Only shown in New Complaints, All Requests, Work in Progress, and Completed tabs) */}
+        {/* Live IST Clock in DD/MM/YYYY format (Only shown in specified tabs) */}
         {['new-complaint-view', 'dashboard', 'electrician-in-progress', 'completed-status'].includes(activeTab) && currentTime && (
           <div style={{ margin: '2px 0 6px 0', fontSize: '10px', background: 'rgba(0, 0, 0, 0.25)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
-            IST: {currentTime}
+            IST (DD/MM/YYYY): {currentTime}
           </div>
         )}
         
@@ -812,7 +820,7 @@ function App() {
                 <p style={{ margin: '3px 0' }}>Completed by: {req.assignedName || 'N/A'}</p>
                 <p style={{ margin: '3px 0' }}>Completer mobile: {req.assignedMobile || 'N/A'}</p>
                 <p style={{ margin: '3px 0' }}>
-                  Completed at: {req.completedAt ? new Date(req.completedAt).toLocaleString() : 'N/A'}
+                  Completed at: {formatDMYDate(req.completedAt)}
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
                 <div className="completed-photo-grid" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
