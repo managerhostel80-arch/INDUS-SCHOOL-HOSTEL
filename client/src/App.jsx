@@ -16,7 +16,7 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
-// 100% Guaranteed DD/MM/YYYY Manual Formatter
+// Bulletproof DD/MM/YYYY Date Formatter (Handles MongoDB ISO strings safely)
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
@@ -353,26 +353,30 @@ function App() {
     const photoUrl = getPhotoUrl(photo);
     return (
       <div style={{ minWidth: 0, width: 'fit-content', maxWidth: '320px' }}>
-        {showLabel && <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{label}</div>}
+        {showLabel && <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>}
         {photoUrl ? (
-          <a href={photoUrl} target="_blank" rel="noreferrer">
-            <img
-              src={photoUrl}
-              alt={alt}
-              style={{ 
-                display: 'block', 
-                width: 'auto', 
-                height: 'auto', 
-                maxWidth: '100%', 
-                maxHeight: '180px', 
-                objectFit: 'contain',
-                border: '2px solid #2563eb', // Prominent blue border
-                borderRadius: '6px',
-                padding: '4px',
-                background: '#ffffff',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-            />
+          <a href={photoUrl} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
+            <div style={{
+              border: '4px solid #0056b3', // Thick, prominent blue border box frame
+              borderRadius: '8px',
+              padding: '6px',
+              background: '#ffffff',
+              display: 'inline-block',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+            }}>
+              <img
+                src={photoUrl}
+                alt={alt}
+                style={{ 
+                  display: 'block', 
+                  width: 'auto', 
+                  height: 'auto', 
+                  maxWidth: '100%', 
+                  maxHeight: '160px', 
+                  objectFit: 'contain'
+                }}
+              />
+            </div>
           </a>
         ) : (
           <span style={{ color: '#666' }}>Photo not available</span>
@@ -842,8 +846,8 @@ function App() {
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
                 
-                {/* 2 Images with explicit blue borders side-by-side */}
-                <div className="completed-photo-grid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '10px' }}>
+                {/* 2 Images with explicit blue border boxes side-by-side */}
+                <div className="completed-photo-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
