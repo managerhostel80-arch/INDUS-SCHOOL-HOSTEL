@@ -16,31 +16,40 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
-// Strict custom formatter for Day-Month-Year (DD/MM/YYYY)
+// 100% Guaranteed DD/MM/YYYY Manual Formatter
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
 
-  const options = { timeZone: 'Asia/Kolkata', hour12: true };
-  
-  const day = String(date.toLocaleString('en-IN', { ...options, day: '2-digit' })).replace(/\D/g, '').slice(-2) || String(date.getDate()).padStart(2, '0');
-  const month = String(date.toLocaleString('en-IN', { ...options, month: '2-digit' })).replace(/\D/g, '').slice(-2) || String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.toLocaleString('en-IN', { ...options, year: 'numeric' }).replace(/\D/g, '').slice(-4) || date.getFullYear();
-  
-  const timeStr = date.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-
-  return `${day}/${month}/${year}, ${timeStr}`;
-};
-
-const formatLiveClock = (date) => {
-  const options = { timeZone: 'Asia/Kolkata' };
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
-  const timeStr = date.toLocaleTimeString('en-IN', { ...options, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-  
-  return `${day}/${month}/${year} - ${timeStr}`;
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = String(hours).padStart(2, '0');
+
+  return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
+};
+
+const formatLiveClock = (date) => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = String(hours).padStart(2, '0');
+
+  return `${day}/${month}/${year} - ${strHours}:${minutes}:${seconds} ${ampm}`;
 };
 
 function App() {
@@ -357,10 +366,11 @@ function App() {
                 maxWidth: '100%', 
                 maxHeight: '180px', 
                 objectFit: 'contain',
-                border: '2px solid #cbd5e1',
+                border: '2px solid #2563eb', // Prominent blue border
                 borderRadius: '6px',
                 padding: '4px',
-                background: '#ffffff'
+                background: '#ffffff',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
               }}
             />
           </a>
@@ -517,7 +527,7 @@ function App() {
           Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
         </h3>
 
-        {/* Live IST Clock in DD/MM/YYYY format */}
+        {/* Live IST Clock strictly in DD/MM/YYYY format */}
         {['new-complaint-view', 'dashboard', 'electrician-in-progress', 'completed-status'].includes(activeTab) && currentTime && (
           <div style={{ margin: '2px 0 6px 0', fontSize: '10px', background: 'rgba(0, 0, 0, 0.25)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
             IST (DD/MM/YYYY): {currentTime}
@@ -832,8 +842,8 @@ function App() {
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
                 
-                {/* 2 Images with explicit borders side-by-side */}
-                <div className="completed-photo-grid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {/* 2 Images with explicit blue borders side-by-side */}
+                <div className="completed-photo-grid" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '10px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
