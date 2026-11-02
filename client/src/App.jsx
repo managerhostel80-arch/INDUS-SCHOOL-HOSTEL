@@ -16,6 +16,41 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
+const syncPushSubscription = async () => {
+  const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
+  const keyResult = await keyResponse.json();
+  if (!keyResponse.ok || !keyResult.success) {
+    throw new Error(keyResult.error || 'Could not load notification settings.');
+  }
+
+  await navigator.serviceWorker.register('/service-worker.js');
+  const registration = await navigator.serviceWorker.ready;
+  let subscription = await registration.pushManager.getSubscription();
+  const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
+
+  if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
+    await subscription.unsubscribe();
+    subscription = null;
+  }
+
+  if (!subscription) {
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey
+    });
+  }
+
+  const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(subscription.toJSON())
+  });
+  const subscribeResult = await subscribeResponse.json();
+  if (!subscribeResponse.ok || !subscribeResult.success) {
+    throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
+  }
+};
+
 // Strict manual DD/MM/YYYY Formatter
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -134,6 +169,20 @@ function App() {
     if (isLoggedIn) fetchData();
   }, [isLoggedIn]);
 
+  useEffect(() => {
+    if (!isLoggedIn || !('serviceWorker' in navigator) || !('Notification' in window) ||
+      Notification.permission !== 'granted' || !('PushManager' in window)) {
+      return;
+    }
+
+    syncPushSubscription()
+      .then(() => setPushStatus('Notifications are enabled and this device is registered.'))
+      .catch(err => {
+        console.error('Unable to sync this device for notifications:', err);
+        setPushStatus(err.message || 'Could not register this device for notifications.');
+      });
+  }, [isLoggedIn]);
+
   const handleLoginSubmit = (event) => {
     event.preventDefault();
 
@@ -180,38 +229,7 @@ function App() {
         return;
       }
 
-      const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
-      const keyResult = await keyResponse.json();
-      if (!keyResponse.ok || !keyResult.success) {
-        throw new Error(keyResult.error || 'Could not load notification settings.');
-      }
-
-      await navigator.serviceWorker.register('/service-worker.js');
-      const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
-      
-      if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
-        await subscription.unsubscribe();
-        subscription = null;
-      }
-
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey
-        });
-      }
-
-      const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(subscription.toJSON())
-      });
-      const subscribeResult = await subscribeResponse.json();
-      if (!subscribeResponse.ok || !subscribeResult.success) {
-        throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
-      }
+      await syncPushSubscription();
 
       setPushStatus('Notifications enabled on this device.');
       alert('Notifications enabled successfully on this device!');
