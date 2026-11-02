@@ -1,6 +1,4 @@
 const MaintenanceRequest = require('../models/Request');
-const PushSubscription = require('../models/PushSubscription');
-const webpush = require('web-push');
 const pushNotifications = require('../services/pushNotifications');
 
 const getUploadedPhotoUrl = (file) => (
@@ -62,38 +60,8 @@ exports.createRequest = async (req, res) => {
     const savedRequest = await newRequest.save();
     res.status(201).json({ success: true, data: savedRequest });
 
-    // --- BROADCAST PUSH NOTIFICATION TO ALL REGISTERED DEVICES & SHORTCUTS ---
-    try {
-      const subscriptions = await PushSubscription.find({});
-      if (subscriptions.length > 0) {
-        const payload = JSON.stringify({
-          title: `New Maintenance Request (${requestId})`,
-          body: `Category: ${category} | Location: ${location}`,
-          url: '/'
-        });
-
-        for (const sub of subscriptions) {
-          try {
-            await webpush.sendNotification(sub, payload);
-          } catch (err) {
-            // Remove expired or invalid subscriptions from database
-            if (err.statusCode === 410 || err.statusCode === 404) {
-              await PushSubscription.deleteOne({ endpoint: sub.endpoint });
-            }
-            console.error('Push delivery error for device:', err.message);
-          }
-        }
-        console.log(`Push notifications broadcasted to ${subscriptions.length} devices.`);
-      } else {
-        console.log('No push subscriptions found in database.');
-      }
-    } catch (pushErr) {
-      console.error('Error broadcasting push notification:', pushErr);
-    }
-
-    // Also trigger external/service push handler if configured
     pushNotifications.notifyNewRequest(savedRequest).catch(err => {
-      console.error('Unable to send secondary push notifications:', err);
+      console.error('Unable to send push notifications:', err);
     });
 
   } catch (err) {
