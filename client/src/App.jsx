@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
+const BLOCKED_NOTIFICATION_MESSAGE = 'Notifications are blocked on this device. In Chrome, open Settings > Site settings > Notifications and allow this site. For an installed shortcut, also check Android Settings > Apps > Hostel 360 > Notifications. Reopen the app and tap Enable notifications again.';
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -173,7 +174,7 @@ function App() {
     }
 
     if (Notification.permission === 'denied') {
-      setPushStatus('Notifications are blocked for this site. Allow them in your browser site settings, then reload and try again.');
+      setPushStatus(BLOCKED_NOTIFICATION_MESSAGE);
       return;
     }
 
@@ -185,7 +186,7 @@ function App() {
       if (permission !== 'granted') {
         setPushStatus(
           permission === 'denied'
-            ? 'Notifications were blocked. Allow them in your browser site settings, then reload and try again.'
+            ? BLOCKED_NOTIFICATION_MESSAGE
             : 'Allow notifications when your browser asks to receive complaint alerts.'
         );
         return;
@@ -224,7 +225,7 @@ function App() {
         throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
       }
 
-      setPushStatus('Notifications enabled on this device.');
+      setPushStatus('Notifications enabled on this device. Enable them separately on each device that should receive alerts.');
       alert('Notifications enabled successfully on this device!');
     } catch (err) {
       console.error('Unable to enable notifications:', err);
