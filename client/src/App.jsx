@@ -16,44 +16,33 @@ const areKeysEqual = (currentKey, configuredKey) => {
   return configuredKey.every((byte, index) => byte === currentBytes[index]);
 };
 
-const syncPushSubscription = async () => {
-  const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
-  const keyResult = await keyResponse.json();
-  if (!keyResponse.ok || !keyResult.success) {
-    throw new Error(keyResult.error || 'Could not load notification settings.');
-  }
-
-  await navigator.serviceWorker.register('/service-worker.js');
-  const registration = await navigator.serviceWorker.ready;
-  let subscription = await registration.pushManager.getSubscription();
-  const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
-
-  if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
-    await subscription.unsubscribe();
-    subscription = null;
-  }
-
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey
-    });
-  }
-
-  const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(subscription.toJSON())
-  });
-  const subscribeResult = await subscribeResponse.json();
-  if (!subscribeResponse.ok || !subscribeResult.success) {
-    throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
-  }
-};
-
-// Strict manual DD/MM/YYYY Formatter
+// Bulletproof string-splitting extractor for DD/MM/YYYY
 const formatDMYDate = (dateString) => {
   if (!dateString) return 'N/A';
+  
+  if (typeof dateString === 'string' && dateString.includes('-')) {
+    try {
+      const [datePart, timePart] = dateString.split('T');
+      const [year, month, day] = datePart.split('-');
+      
+      if (year && month && day) {
+        let formattedTime = '';
+        if (timePart) {
+          const timeClean = timePart.split('.')[0];
+          const [h, m] = timeClean.split(':');
+          let hours = parseInt(h, 10);
+          const ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          formattedTime = `, ${String(hours).padStart(2, '0')}:${m} ${ampm}`;
+        }
+        return `${day}/${month}/${year}${formattedTime}`;
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return dateString;
 
@@ -95,7 +84,6 @@ function App() {
   const [activeTab, setActiveTab] = useState('admin-dashboard');
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
-  const [team, setTeam] = useState([]);
   const [filterCategory, setFilterCategory] = useState('All');
   const [submittedRequest, setSubmittedRequest] = useState(null);
 
@@ -112,15 +100,7 @@ function App() {
 
   const [completionData, setCompletionData] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
-  const [editingMemberId, setEditingMemberId] = useState(null);
-  const [teamForm, setTeamForm] = useState({
-    category: 'Electrical',
-    personName: '',
-    mobileNumber: '',
-    active: true
-  });
-
-  const [dbStats, setDbStats] = useState({ requests: 0, teamMembers: 0 });
+  const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
   const [isEnablingPush, setIsEnablingPush] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
@@ -138,9 +118,8 @@ function App() {
 
   const fetchData = async () => {
     try {
-      const [requestsRes, teamRes, dbRes] = await Promise.all([
+      const [requestsRes, dbRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/requests`),
-        fetch(`${API_BASE_URL}/api/team`),
         fetch(`${API_BASE_URL}/api/db/stats`).catch(() => null)
       ]);
 
@@ -153,9 +132,6 @@ function App() {
         }
       }
 
-      const teamResult = teamRes ? await teamRes.json() : null;
-      if (teamResult?.success) setTeam(teamResult.data);
-
       if (dbRes) {
         const dbResult = await dbRes.json();
         if (dbResult?.success) setDbStats(dbResult.stats);
@@ -167,20 +143,6 @@ function App() {
 
   useEffect(() => {
     if (isLoggedIn) fetchData();
-  }, [isLoggedIn]);
-
-  useEffect(() => {
-    if (!isLoggedIn || !('serviceWorker' in navigator) || !('Notification' in window) ||
-      Notification.permission !== 'granted' || !('PushManager' in window)) {
-      return;
-    }
-
-    syncPushSubscription()
-      .then(() => setPushStatus('Notifications are enabled and this device is registered.'))
-      .catch(err => {
-        console.error('Unable to sync this device for notifications:', err);
-        setPushStatus(err.message || 'Could not register this device for notifications.');
-      });
   }, [isLoggedIn]);
 
   const handleLoginSubmit = (event) => {
@@ -229,7 +191,38 @@ function App() {
         return;
       }
 
-      await syncPushSubscription();
+      const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
+      const keyResult = await keyResponse.json();
+      if (!keyResponse.ok || !keyResult.success) {
+        throw new Error(keyResult.error || 'Could not load notification settings.');
+      }
+
+      await navigator.serviceWorker.register('/service-worker.js');
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
+      
+      if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+      }
+
+      const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription.toJSON())
+      });
+      const subscribeResult = await subscribeResponse.json();
+      if (!subscribeResponse.ok || !subscribeResult.success) {
+        throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
+      }
 
       setPushStatus('Notifications enabled on this device.');
       alert('Notifications enabled successfully on this device!');
@@ -301,41 +294,6 @@ function App() {
     }
   };
 
-  const handleTeamSubmit = async (e) => {
-    e.preventDefault();
-    const method = editingMemberId ? 'PATCH' : 'POST';
-    const url = editingMemberId 
-      ? `${API_BASE_URL}/api/team/${editingMemberId}`
-      : `${API_BASE_URL}/api/team`;
-
-    try {
-      const res = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(teamForm)
-      });
-      const result = await res.json();
-      if (result.success) {
-        setEditingMemberId(null);
-        setTeamForm({ category: 'Electrical', personName: '', mobileNumber: '', active: true });
-        await fetchData();
-        setActiveTab('team-directory-screen9');
-      }
-    } catch (err) {
-      console.error('Error saving team member:', err);
-    }
-  };
-
-  const handleDeleteMember = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this employee?')) return;
-    try {
-      await fetch(`${API_BASE_URL}/api/team/${id}`, { method: 'DELETE' });
-      await fetchData();
-    } catch (err) {
-      console.error('Error deleting team member:', err);
-    }
-  };
-
   const handleClearDatabase = async () => {
     if (!window.confirm('WARNING: This will delete ALL maintenance requests from MongoDB permanently.')) return;
     try {
@@ -366,7 +324,6 @@ function App() {
   const getPhotoUrl = (photo) => {
     if (!photo) return null;
     const base = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
-    // Appends cache-busting timestamp so browser forces border updates
     return `${base}?t=${Date.now()}`;
   };
 
@@ -378,7 +335,7 @@ function App() {
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
             <div style={{
-              border: '4px solid #0056b3', // Thick, prominent blue border box frame
+              border: '4px solid #0056b3', // Prominent blue border frame
               borderRadius: '8px',
               padding: '6px',
               background: '#ffffff',
@@ -436,8 +393,6 @@ function App() {
     : requests.filter(r => r.category === filterCategory);
 
   const newComplaintJobs = requests.filter(r => r.status === 'New');
-  const acceptedJobs = requests.filter(r => r.status === 'Accepted');
-  const inProgressJobs = requests.filter(r => r.status === 'In Progress');
   const completedJobs = requests.filter(r => r.status === 'Completed');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
@@ -559,9 +514,9 @@ function App() {
           </div>
         )}
         
-        {/* Navigation Tabs Bar */}
+        {/* Navigation Tabs Bar (Adjusted & Cleaned up) */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
-          <div className="app-nav-row app-nav-row-primary">
+          <div className="app-nav-row app-nav-row-primary" style={{ display: 'flex', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
             {userRole === 'admin' && (
               <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
             )}
@@ -570,9 +525,6 @@ function App() {
             <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
             <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>Work in Progress</button>
             <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
-          </div>
-          <div className="app-nav-row app-nav-row-secondary">
-            <button onClick={() => setActiveTab('team-directory-screen9')} style={navTabStyle(activeTab === 'team-directory-screen9')}>Maintenance Team</button>
             {userRole === 'admin' && (
               <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
             )}
@@ -877,42 +829,11 @@ function App() {
           </div>
         )}
 
-        {/* TEAM DIRECTORY TAB */}
-        {activeTab === 'team-directory-screen9' && (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <h3 style={{ margin: 0, fontSize: '15px' }}>Team</h3>
-              <button onClick={() => setActiveTab('admin-panel-screen10')} style={{ padding: '4px 8px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>+ Add</button>
-            </div>
-            {team.map(m => (
-              <div key={m._id} style={{ background: 'white', padding: '8px', borderRadius: '6px', marginBottom: '6px', border: '1px solid #ddd', display: 'flex', justifyContent: 'space-between', fontSize: '12px', alignItems: 'center' }}>
-                <div><b>{m.personName}</b> ({m.category})<br/>{m.mobileNumber}</div>
-                <button onClick={() => handleDeleteMember(m._id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '4px 6px', borderRadius: '4px', fontSize: '10px' }}>Del</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* ADD TEAM MEMBER TAB */}
-        {activeTab === 'admin-panel-screen10' && (
-          <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Add Team Member</h3>
-            <form onSubmit={handleTeamSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
-              <select value={teamForm.category} onChange={e => setTeamForm({...teamForm, category: e.target.value})} style={inputStyle}>
-                {['Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <input type="text" placeholder="Name" value={teamForm.personName} onChange={e => setTeamForm({...teamForm, personName: e.target.value})} required style={inputStyle} />
-              <input type="tel" placeholder="Mobile" value={teamForm.mobileNumber} onChange={e => setTeamForm({...teamForm, mobileNumber: e.target.value})} required style={inputStyle} />
-              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save</button>
-            </form>
-          </div>
-        )}
-
         {/* SETTINGS TAB (Admin Only) */}
         {activeTab === 'db-management' && userRole === 'admin' && (
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
-            <p>Requests: <b>{dbStats.requests}</b> | Team: <b>{dbStats.teamMembers}</b></p>
+            <p>Requests: <b>{dbStats.requests}</b></p>
             <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
           </div>
         )}
