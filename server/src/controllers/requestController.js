@@ -58,11 +58,13 @@ exports.createRequest = async (req, res) => {
     });
 
     const savedRequest = await newRequest.save();
-    res.status(201).json({ success: true, data: savedRequest });
-
-    pushNotifications.notifyNewRequest(savedRequest).catch(err => {
+    try {
+      await pushNotifications.notifyNewRequest(savedRequest);
+    } catch (err) {
       console.error('Unable to send push notifications:', err);
-    });
+    }
+
+    res.status(201).json({ success: true, data: savedRequest });
 
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
