@@ -812,20 +812,14 @@ function App() {
             
             {/* Category Filter for Completed Tab */}
             <h4 style={{ fontSize: '12px', margin: '8px 0 4px 0' }}>Filter Category</h4>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            <div className="dashboard-category-filters" style={{ gap: '4px', marginBottom: '12px' }}>
               {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
                 <button 
                   key={cat} 
                   onClick={() => setCompletedFilterCategory(cat)} 
-                  style={{ 
-                    padding: '4px 8px', 
-                    background: completedFilterCategory === cat ? '#0d6efd' : 'white', 
-                    color: completedFilterCategory === cat ? 'white' : '#333', 
-                    border: '1px solid #ccc', 
-                    borderRadius: '4px', 
-                    fontSize: '10px', 
-                    cursor: 'pointer' 
-                  }}
+                  className={completedFilterCategory === cat ? 'dashboard-filter-active' : ''}
+                  aria-pressed={completedFilterCategory === cat}
+                  style={{ padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}
                 >
                   {cat}
                 </button>
