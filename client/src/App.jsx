@@ -86,7 +86,7 @@ function App() {
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
   const [filterCategory, setFilterCategory] = useState('All');
-  const [completedFilterCategory, setCompletedFilterCategory] = useState('All');
+  const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
   const [submittedRequest, setSubmittedRequest] = useState(null);
 
   const [formData, setFormData] = useState({
