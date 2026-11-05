@@ -817,13 +817,15 @@ function App() {
                 <button 
                   key={cat} 
                   onClick={() => setCompletedFilterCategory(cat)} 
+                  className={completedFilterCategory === cat ? 'dashboard-filter-active' : ''}
                   style={{ 
-                    padding: '4px 8px', 
-                    background: completedFilterCategory === cat ? '#0d6efd' : 'white', 
-                    color: completedFilterCategory === cat ? 'white' : '#333', 
-                    border: '1px solid #ccc', 
-                    borderRadius: '4px', 
-                    fontSize: '10px', 
+                    padding: '6px 8px', 
+                    background: completedFilterCategory === cat ? '#0369a1' : 'white', 
+                    color: completedFilterCategory === cat ? 'white' : '#475569', 
+                    border: '1px solid #cbd5e1', 
+                    borderRadius: '5px', 
+                    fontSize: '11px', 
+                    fontWeight: 'bold',
                     cursor: 'pointer' 
                   }}
                 >
