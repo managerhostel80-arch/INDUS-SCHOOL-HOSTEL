@@ -810,28 +810,17 @@ function App() {
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs ({filteredCompletedJobs.length})</h3>
             
-            {/* Category Filter for Completed Tab */}
-            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
-            <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
-              {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                <button 
-                  key={cat} 
-                  onClick={() => setCompletedFilterCategory(cat)} 
-                  className={completedFilterCategory === cat ? 'dashboard-filter-active' : ''}
-                  style={{ 
-                    padding: '4px 8px', 
-                    background: completedFilterCategory === cat ? '#0369a1' : 'white', 
-                    color: completedFilterCategory === cat ? 'white' : '#475569', 
-                    border: '1px solid #cbd5e1', 
-                    borderRadius: '5px', 
-                    fontSize: '10px', 
-                    fontWeight: 'bold',
-                    cursor: 'pointer' 
-                  }}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="completed-category-filter">
+              <label htmlFor="completed-category-filter-select">Filter completed by category</label>
+              <select
+                id="completed-category-filter-select"
+                value={completedFilterCategory}
+                onChange={event => setCompletedFilterCategory(event.target.value)}
+              >
+                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                  <option key={cat} value={cat}>{cat === 'All' ? 'All categories' : cat}</option>
+                ))}
+              </select>
             </div>
 
             {filteredCompletedJobs.length === 0 ? (
