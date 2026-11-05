@@ -2,6 +2,22 @@ const webpush = require('web-push');
 const PushSubscription = require('../models/PushSubscription');
 
 let vapidConfigured = false;
+const MAX_SEND_ATTEMPTS = 3;
+
+const sendWithRetry = async (subscription, payload) => {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await webpush.sendNotification(subscription, payload);
+      return;
+    } catch (err) {
+      const statusCode = err.statusCode;
+      const retryable = !statusCode || statusCode === 429 || statusCode >= 500;
+      if (!retryable || attempt >= MAX_SEND_ATTEMPTS) throw err;
+
+      await new Promise(resolve => setTimeout(resolve, 500 * (2 ** (attempt - 1))));
+    }
+  }
+};
 
 const configureVapid = () => {
   if (vapidConfigured) return true;
@@ -31,6 +47,7 @@ exports.notifyNewRequest = async (request) => {
   const payload = JSON.stringify({
     title: 'New maintenance complaint',
     body: `${request.requestId || 'REQ'}: ${request.category || 'General'} — ${request.location || 'Hostel'}`,
+    tag: `maintenance-${request._id || request.requestId || Date.now()}`,
     url: '/'
   });
 
@@ -45,7 +62,7 @@ exports.notifyNewRequest = async (request) => {
         }
       };
 
-      await webpush.sendNotification(pushSub, payload);
+      await sendWithRetry(pushSub, payload);
       return true;
     } catch (err) {
       console.error(`Detailed Push Error for sub ${subscription._id}:`, err.message, err.body || '');
