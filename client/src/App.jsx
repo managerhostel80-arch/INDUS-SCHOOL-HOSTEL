@@ -819,12 +819,12 @@ function App() {
                   onClick={() => setCompletedFilterCategory(cat)} 
                   className={completedFilterCategory === cat ? 'dashboard-filter-active' : ''}
                   style={{ 
-                    padding: '6px 8px', 
+                    padding: '4px 8px', 
                     background: completedFilterCategory === cat ? '#0369a1' : 'white', 
                     color: completedFilterCategory === cat ? 'white' : '#475569', 
                     border: '1px solid #cbd5e1', 
                     borderRadius: '5px', 
-                    fontSize: '11px', 
+                    fontSize: '10px', 
                     fontWeight: 'bold',
                     cursor: 'pointer' 
                   }}
