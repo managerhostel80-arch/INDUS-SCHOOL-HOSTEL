@@ -230,18 +230,6 @@ body {
   font-weight: 700;
 }
 
-.completed-category-filter select {
-  width: min(100%, 260px);
-  min-height: 36px;
-  padding: 6px 10px;
-  border: 1px solid #94a3b8;
-  border-radius: 5px;
-  background: #fff;
-  color: #1e293b;
-  font: inherit;
-  font-weight: 400;
-}
-
 .completed-photo-grid > div {
   flex: 1 1 0;
   min-width: 0;
