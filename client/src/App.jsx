@@ -86,6 +86,7 @@ function App() {
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
   const [filterCategory, setFilterCategory] = useState('All');
+  const [completedFilterCategory, setCompletedFilterCategory] = useState('All');
   const [submittedRequest, setSubmittedRequest] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -393,8 +394,12 @@ function App() {
     ? requests 
     : requests.filter(r => r.category === filterCategory);
 
-  const newComplaintJobs = requests.filter(r => r.status === 'New');
   const completedJobs = requests.filter(r => r.status === 'Completed');
+  const filteredCompletedJobs = completedFilterCategory === 'All'
+    ? completedJobs
+    : completedJobs.filter(r => r.category === completedFilterCategory);
+
+  const newComplaintJobs = requests.filter(r => r.status === 'New');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
     return counts;
@@ -803,10 +808,33 @@ function App() {
         {/* COMPLETED TAB */}
         {activeTab === 'completed-status' && (
           <div>
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs</h3>
-            {completedJobs.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No completed complaints.</p>
-            ) : completedJobs.map(req => (
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs ({filteredCompletedJobs.length})</h3>
+            
+            {/* Category Filter for Completed Tab */}
+            <h4 style={{ fontSize: '12px', margin: '8px 0 4px 0' }}>Filter Category</h4>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                <button 
+                  key={cat} 
+                  onClick={() => setCompletedFilterCategory(cat)} 
+                  style={{ 
+                    padding: '4px 8px', 
+                    background: completedFilterCategory === cat ? '#0d6efd' : 'white', 
+                    color: completedFilterCategory === cat ? 'white' : '#333', 
+                    border: '1px solid #ccc', 
+                    borderRadius: '4px', 
+                    fontSize: '10px', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {filteredCompletedJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No completed complaints found for this category.</p>
+            ) : filteredCompletedJobs.map(req => (
               <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <strong>{req.requestId} - {req.category}</strong>
