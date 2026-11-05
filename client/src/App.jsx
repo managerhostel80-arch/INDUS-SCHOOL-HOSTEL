@@ -810,20 +810,17 @@ function App() {
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs ({filteredCompletedJobs.length})</h3>
             
-            {/* Category Filter for Completed Tab */}
-            <h4 style={{ fontSize: '12px', margin: '8px 0 4px 0' }}>Filter Category</h4>
-            <div className="dashboard-category-filters" style={{ gap: '4px', marginBottom: '12px' }}>
-              {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                <button 
-                  key={cat} 
-                  onClick={() => setCompletedFilterCategory(cat)} 
-                  className={completedFilterCategory === cat ? 'dashboard-filter-active' : ''}
-                  aria-pressed={completedFilterCategory === cat}
-                  style={{ padding: '4px 8px', fontSize: '10px', cursor: 'pointer' }}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="completed-category-filter">
+              <label htmlFor="completed-category-filter-select">Filter completed by category</label>
+              <select
+                id="completed-category-filter-select"
+                value={completedFilterCategory}
+                onChange={event => setCompletedFilterCategory(event.target.value)}
+              >
+                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                  <option key={cat} value={cat}>{cat === 'All' ? 'All categories' : cat}</option>
+                ))}
+              </select>
             </div>
 
             {filteredCompletedJobs.length === 0 ? (

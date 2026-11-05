@@ -73,6 +73,17 @@ body {
 .app-nav-row button {
   flex: 1 1 145px;
   min-width: 120px;
+  transition: filter 140ms ease, box-shadow 140ms ease;
+}
+
+.app-nav-row button:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.22);
+}
+
+.app-nav-row button:focus-visible {
+  outline: 2px solid #99f6e4;
+  outline-offset: 2px;
 }
 
 .dashboard-stats {
@@ -207,6 +218,28 @@ body {
   align-items: flex-start;
   gap: 0;
   margin-top: 8px;
+}
+
+.completed-category-filter {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.completed-category-filter select {
+  width: min(100%, 260px);
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #94a3b8;
+  border-radius: 5px;
+  background: #fff;
+  color: #1e293b;
+  font: inherit;
+  font-weight: 400;
 }
 
 .completed-photo-grid > div {
