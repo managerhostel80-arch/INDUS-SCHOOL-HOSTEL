@@ -86,7 +86,7 @@ function App() {
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
   const [filterCategory, setFilterCategory] = useState('All');
-  const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
+  const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific category filter for completed tab
   const [submittedRequest, setSubmittedRequest] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -520,7 +520,7 @@ function App() {
           </div>
         )}
         
-        {/* Navigation Tabs Bar (Adjusted & Cleaned up) */}
+        {/* Navigation Tabs Bar */}
         <nav className="app-nav-tabs" aria-label="Main navigation">
           <div className="app-nav-row app-nav-row-primary" style={{ display: 'flex', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
             {userRole === 'admin' && (
@@ -810,17 +810,26 @@ function App() {
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs ({filteredCompletedJobs.length})</h3>
             
-            <div className="completed-category-filter">
-              <label htmlFor="completed-category-filter-select">Filter completed by category</label>
-              <select
-                id="completed-category-filter-select"
-                value={completedFilterCategory}
-                onChange={event => setCompletedFilterCategory(event.target.value)}
-              >
-                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
-                  <option key={cat} value={cat}>{cat === 'All' ? 'All categories' : cat}</option>
-                ))}
-              </select>
+            {/* Category Filter for Completed Tab */}
+            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
+            <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                <button 
+                  key={cat} 
+                  onClick={() => setCompletedFilterCategory(cat)} 
+                  style={{ 
+                    padding: '4px 8px', 
+                    background: completedFilterCategory === cat ? '#0d6efd' : 'white', 
+                    color: completedFilterCategory === cat ? 'white' : '#333', 
+                    border: '1px solid #ccc', 
+                    borderRadius: '4px', 
+                    fontSize: '10px', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
 
             {filteredCompletedJobs.length === 0 ? (
