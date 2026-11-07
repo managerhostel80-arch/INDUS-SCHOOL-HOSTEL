@@ -695,6 +695,18 @@ function App() {
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>
               All Requests ({filteredRequests.length})
             </h3>
+            <div className="completed-category-filter">
+              <label htmlFor="all-requests-category-filter">Filter by category</label>
+              <select
+                id="all-requests-category-filter"
+                value={filterCategory}
+                onChange={event => setFilterCategory(event.target.value)}
+              >
+                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                  <option key={cat} value={cat}>{cat === 'All' ? 'All categories' : cat}</option>
+                ))}
+              </select>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px', marginBottom: '10px' }}>
               {[
                 ['New', '#fff3cd', '#664d03'],
