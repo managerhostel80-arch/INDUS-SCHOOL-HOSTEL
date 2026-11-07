@@ -86,7 +86,7 @@ function App() {
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
   const [filterCategory, setFilterCategory] = useState('All');
-  const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific category filter for completed tab
+  const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
   const [submittedRequest, setSubmittedRequest] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -337,7 +337,7 @@ function App() {
         {photoUrl ? (
           <a href={photoUrl} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
             <div style={{
-              border: '4px solid #0056b3', // Prominent blue border frame
+              border: '4px solid #0056b3',
               borderRadius: '8px',
               padding: '6px',
               background: '#ffffff',
@@ -689,16 +689,18 @@ function App() {
           </div>
         )}
 
-        {/* REQUESTS LIST TAB */}
+        {/* REQUESTS LIST TAB (All Requests) */}
         {activeTab === 'dashboard' && (
           <div>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>
               All Requests ({filteredRequests.length})
             </h3>
+            
+            {/* Category Filter Dropdown matching Completed Tab style */}
             <div className="completed-category-filter">
-              <label htmlFor="all-requests-category-filter">Filter by category</label>
+              <label htmlFor="all-requests-category-filter-select">Filter by category</label>
               <select
-                id="all-requests-category-filter"
+                id="all-requests-category-filter-select"
                 value={filterCategory}
                 onChange={event => setFilterCategory(event.target.value)}
               >
@@ -707,6 +709,7 @@ function App() {
                 ))}
               </select>
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px', marginBottom: '10px' }}>
               {[
                 ['New', '#fff3cd', '#664d03'],
@@ -851,7 +854,6 @@ function App() {
                 </p>
                 {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
                 
-                {/* 2 Images with explicit blue border boxes side-by-side */}
                 <div className="completed-photo-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
