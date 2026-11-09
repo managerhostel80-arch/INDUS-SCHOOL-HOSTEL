@@ -106,10 +106,6 @@ function App() {
   });
 
   const [completionData, setCompletionData] = useState({});
-  const [progressVideos, setProgressVideos] = useState({});
-  const [uploadingProgressVideos, setUploadingProgressVideos] = useState({});
-  const [completionVideos, setCompletionVideos] = useState({});
-  const [uploadingCompletionVideos, setUploadingCompletionVideos] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
@@ -351,12 +347,13 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
-      if (!itemComp.completionPhoto) {
-        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
+      if (!itemComp.completionPhoto && !itemComp.completionVideo) {
+        window.alert('Please upload a completed-work photo or video before marking this complaint as done.');
         return;
       }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
-      data.append('completionPhoto', itemComp.completionPhoto);
+      if (itemComp.completionPhoto) data.append('completionPhoto', itemComp.completionPhoto);
+      if (itemComp.completionVideo) data.append('completionVideo', itemComp.completionVideo);
     }
 
     try {
@@ -373,70 +370,6 @@ function App() {
       await fetchData();
     } catch (err) {
       console.error('Update status error:', err);
-    }
-  };
-
-  const uploadCompletionVideo = async (id) => {
-    const video = completionVideos[id];
-    if (!video) {
-      window.alert('Please select a completed work video to upload.');
-      return;
-    }
-
-    const data = new FormData();
-    data.append('completionVideo', video);
-    setUploadingCompletionVideos({ ...uploadingCompletionVideos, [id]: true });
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
-        method: 'PATCH',
-        body: data
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        window.alert(result.error || 'Could not upload the completed work video.');
-        return;
-      }
-
-      setCompletionVideos(({ [id]: _uploadedVideo, ...remainingVideos }) => remainingVideos);
-      await fetchData();
-    } catch (err) {
-      console.error('Completion video upload error:', err);
-      window.alert('Could not upload the completed work video.');
-    } finally {
-      setUploadingCompletionVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
-    }
-  };
-
-  const uploadProgressVideo = async (id) => {
-    const video = progressVideos[id];
-    if (!video) {
-      window.alert('Please select a work-in-progress video to upload.');
-      return;
-    }
-
-    const data = new FormData();
-    data.append('progressVideo', video);
-    setUploadingProgressVideos({ ...uploadingProgressVideos, [id]: true });
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
-        method: 'PATCH',
-        body: data
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        window.alert(result.error || 'Could not upload the work-in-progress video.');
-        return;
-      }
-
-      setProgressVideos(({ [id]: _uploadedVideo, ...remainingVideos }) => remainingVideos);
-      await fetchData();
-    } catch (err) {
-      console.error('Work-in-progress video upload error:', err);
-      window.alert('Could not upload the work-in-progress video.');
-    } finally {
-      setUploadingProgressVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
     }
   };
 
@@ -963,7 +896,8 @@ function App() {
             {requests.length === 0 ? (
               <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
             ) : requests.map(req => {
-              const hasCompletedPhoto = Boolean(completionData[req._id]?.completionPhoto);
+              const itemCompletion = completionData[req._id] || {};
+              const hasCompletionEvidence = Boolean(itemCompletion.completionPhoto || itemCompletion.completionVideo);
               return (
                 <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -992,80 +926,80 @@ function App() {
                   )}
                   {renderVideo(req.video)}
                   {renderVideo(req.progressVideo, 'Work in Progress Video')}
-                  {['Accepted', 'In Progress'].includes(req.status) && (
-                    <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                      <label htmlFor={`progress-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload work-in-progress video (optional):
-                      </label>
-                      <input
-                        id={`progress-video-${req._id}`}
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
-                        onChange={event => setProgressVideos({ ...progressVideos, [req._id]: event.target.files[0] })}
-                        style={{ ...inputStyle, margin: '4px 0' }}
-                      />
-                      {progressVideos[req._id] && (
-                        <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
-                          ✓ Video selected: {progressVideos[req._id].name}
-                        </p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => uploadProgressVideo(req._id)}
-                        disabled={!progressVideos[req._id] || uploadingProgressVideos[req._id]}
-                        style={{
-                          width: '100%',
-                          padding: '8px',
-                          marginBottom: '8px',
-                          background: progressVideos[req._id] && !uploadingProgressVideos[req._id] ? '#0d6efd' : '#6c757d',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontWeight: 'bold',
-                          cursor: progressVideos[req._id] && !uploadingProgressVideos[req._id] ? 'pointer' : 'not-allowed'
-                        }}
-                      >
-                        {uploadingProgressVideos[req._id] ? 'Uploading...' : 'Upload Work-in-Progress Video'}
-                      </button>
-                    </div>
-                  )}
                   {req.status === 'Accepted' && (
                     <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                   )}
                   {req.status === 'In Progress' && (
                     <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
                       <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload completed work photo (Required to enable Mark Done):
+                        Upload completed work photo or video (required to enable Mark Done):
                       </label>
                       <input
                         id={`completion-photo-${req._id}`}
                         type="file"
                         accept="image/*"
-                        onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
+                        onChange={event => {
+                          const photo = event.target.files[0];
+                          if (photo && photo.size > 20 * 1024 * 1024) {
+                            window.alert('Please choose a completed-work photo smaller than 20 MB.');
+                            event.target.value = '';
+                            return;
+                          }
+                          setCompletionData({
+                            ...completionData,
+                            [req._id]: { ...itemCompletion, completionPhoto: photo || null }
+                          });
+                        }}
                         style={{...inputStyle, margin: '4px 0'}}
                       />
-                      {hasCompletedPhoto && (
+                      {itemCompletion.completionPhoto && (
                         <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
-                          ✓ Completed photo attached: {completionData[req._id].completionPhoto.name}
+                          ✓ Completed photo attached: {itemCompletion.completionPhoto.name}
                         </p>
                       )}
-                      <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
+                      <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                        Or upload completed work video (MP4, WebM, or MOV):
+                      </label>
+                      <input
+                        id={`completion-video-${req._id}`}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        onChange={event => {
+                          const video = event.target.files[0];
+                          if (video && video.size > 20 * 1024 * 1024) {
+                            window.alert('Please choose a completed-work video smaller than 20 MB.');
+                            event.target.value = '';
+                            return;
+                          }
+                          setCompletionData({
+                            ...completionData,
+                            [req._id]: { ...itemCompletion, completionVideo: video || null }
+                          });
+                        }}
+                        style={{...inputStyle, margin: '4px 0'}}
+                      />
+                      {itemCompletion.completionVideo && (
+                        <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                          ✓ Completed video attached: {itemCompletion.completionVideo.name}
+                        </p>
+                      )}
+                      <input type="text" placeholder="Remarks" value={itemCompletion.remarks || ''} onChange={event => setCompletionData({...completionData, [req._id]: { ...itemCompletion, remarks: event.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                       <button
                         onClick={() => updateStatus(req._id, 'Completed', true)}
-                        disabled={!hasCompletedPhoto}
+                        disabled={!hasCompletionEvidence}
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: hasCompletedPhoto ? '#198754' : '#6c757d',
+                          background: hasCompletionEvidence ? '#198754' : '#6c757d',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           fontWeight: 'bold',
-                          cursor: hasCompletedPhoto ? 'pointer' : 'not-allowed',
-                          opacity: hasCompletedPhoto ? 1 : 0.65
+                          cursor: hasCompletionEvidence ? 'pointer' : 'not-allowed',
+                          opacity: hasCompletionEvidence ? 1 : 0.65
                         }}
                       >
-                        {hasCompletedPhoto ? 'Mark Done' : 'Upload Completed Photo to Enable'}
+                        {hasCompletionEvidence ? 'Mark Done' : 'Upload a Photo or Video to Enable'}
                       </button>
                     </div>
                   )}
@@ -1116,40 +1050,6 @@ function App() {
                 {renderVideo(req.video)}
                 {renderVideo(req.progressVideo, 'Work in Progress Video')}
                 {renderVideo(req.completionVideo, 'Completed Work Video')}
-                <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                  <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>
-                    Upload completed work video (optional):
-                  </label>
-                  <input
-                    id={`completion-video-${req._id}`}
-                    type="file"
-                    accept="video/mp4,video/webm,video/quicktime"
-                    onChange={event => setCompletionVideos({ ...completionVideos, [req._id]: event.target.files[0] })}
-                    style={{ ...inputStyle, margin: '4px 0' }}
-                  />
-                  {completionVideos[req._id] && (
-                    <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
-                      ✓ Video selected: {completionVideos[req._id].name}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => uploadCompletionVideo(req._id)}
-                    disabled={!completionVideos[req._id] || uploadingCompletionVideos[req._id]}
-                    style={{
-                      width: '100%',
-                      padding: '8px',
-                      background: completionVideos[req._id] && !uploadingCompletionVideos[req._id] ? '#0d6efd' : '#6c757d',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      fontWeight: 'bold',
-                      cursor: completionVideos[req._id] && !uploadingCompletionVideos[req._id] ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    {uploadingCompletionVideos[req._id] ? 'Uploading...' : 'Upload Completed Work Video'}
-                  </button>
-                </div>
               </div>
             ))}
           </div>
