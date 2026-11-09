@@ -88,6 +88,7 @@ function App() {
   const [filterCategory, setFilterCategory] = useState('All');
   const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
   const [submittedRequest, setSubmittedRequest] = useState(null);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const [formData, setFormData] = useState({
     category: 'Electrical',
@@ -243,11 +244,14 @@ function App() {
 
   const handleReportSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmittingReport) return;
+
     const data = new FormData();
     Object.keys(formData).forEach(key => {
       if (formData[key]) data.append(key, formData[key]);
     });
 
+    setIsSubmittingReport(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/requests`, {
         method: 'POST',
@@ -262,9 +266,12 @@ function App() {
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
       setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null, video: null });
-      await fetchData();
+      fetchData();
     } catch (err) {
       console.error('Submission error:', err);
+      window.alert(err.message || 'Could not submit the complaint. Please try again.');
+    } finally {
+      setIsSubmittingReport(false);
     }
   };
 
@@ -774,7 +781,22 @@ function App() {
                   style={inputStyle}
                 />
               </div>
-              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
+              <button
+                type="submit"
+                disabled={isSubmittingReport}
+                style={{
+                  padding: '10px',
+                  background: isSubmittingReport ? '#6c757d' : '#0d6efd',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontWeight: 'bold',
+                  marginTop: '6px',
+                  cursor: isSubmittingReport ? 'wait' : 'pointer'
+                }}
+              >
+                {isSubmittingReport ? 'Submitting report...' : 'Submit'}
+              </button>
             </form>
           </div>
         )}
