@@ -4,7 +4,7 @@ const fs = require('fs');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-const maxVideoSize = 3 * 1024 * 1024;
+const maxVideoSize = 20 * 1024 * 1024;
 const videoFields = ['video', 'progressVideo', 'completionVideo'];
 const cloudinaryConfig = {
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -114,13 +114,13 @@ const handleMediaUpload = (fields) => (req, res, next) => {
         });
         return res.status(500).json({
           success: false,
-          error: 'The video exceeds the 3 MB limit, and temporary uploaded media could not be cleaned up.'
+          error: 'The video exceeds the 20 MB limit, and temporary uploaded media could not be cleaned up.'
         });
       }
 
       return res.status(413).json({
         success: false,
-        error: 'Videos must be 3 MB or smaller.'
+        error: 'Videos must be 20 MB or smaller.'
       });
     }
 
