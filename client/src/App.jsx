@@ -97,10 +97,13 @@ function App() {
     reportedByMobile: '',
     reportedAt: '',
     urgencyLevel: 'Medium',
-    photo: null
+    photo: null,
+    video: null
   });
 
   const [completionData, setCompletionData] = useState({});
+  const [completionVideos, setCompletionVideos] = useState({});
+  const [uploadingCompletionVideos, setUploadingCompletionVideos] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
@@ -256,7 +259,7 @@ function App() {
 
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
-      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
+      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null, video: null });
       await fetchData();
     } catch (err) {
       console.error('Submission error:', err);
@@ -296,6 +299,38 @@ function App() {
     }
   };
 
+  const uploadCompletionVideo = async (id) => {
+    const video = completionVideos[id];
+    if (!video) {
+      window.alert('Please select a completed work video to upload.');
+      return;
+    }
+
+    const data = new FormData();
+    data.append('completionVideo', video);
+    setUploadingCompletionVideos({ ...uploadingCompletionVideos, [id]: true });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not upload the completed work video.');
+        return;
+      }
+
+      setCompletionVideos(({ [id]: _uploadedVideo, ...remainingVideos }) => remainingVideos);
+      await fetchData();
+    } catch (err) {
+      console.error('Completion video upload error:', err);
+      window.alert('Could not upload the completed work video.');
+    } finally {
+      setUploadingCompletionVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
+    }
+  };
+
   const handleClearDatabase = async () => {
     if (!window.confirm('WARNING: This will delete ALL maintenance requests from MongoDB permanently.')) return;
     try {
@@ -327,6 +362,30 @@ function App() {
     if (!photo) return null;
     const base = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
     return `${base}?t=${Date.now()}`;
+  };
+
+  const getVideoUrl = (video) => {
+    if (!video) return null;
+    return video.startsWith('http') ? video : `${API_BASE_URL}${video}`;
+  };
+
+  const renderVideo = (video, label = 'Complaint Video') => {
+    const videoUrl = getVideoUrl(video);
+    if (!videoUrl) return null;
+
+    return (
+      <div style={{ margin: '8px 0', maxWidth: '480px' }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <video
+          src={videoUrl}
+          controls
+          preload="metadata"
+          style={{ display: 'block', width: '100%', maxHeight: '320px', borderRadius: '4px', background: '#111' }}
+        >
+          Your browser does not support video playback.
+        </video>
+      </div>
+    );
   };
 
   const renderPhoto = (label, photo, alt, showLabel = true) => {
@@ -386,6 +445,7 @@ function App() {
             {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
           </div>
         )}
+        {renderVideo(req.video)}
       </div>
     );
   };
@@ -662,6 +722,24 @@ function App() {
                 <label style={{ fontWeight: 'bold' }}>Photo</label>
                 <input type="file" accept="image/*" onChange={e => setFormData({...formData, photo: e.target.files[0]})} style={inputStyle} />
               </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Video (optional, max 20 MB)</label>
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={e => {
+                    const video = e.target.files[0];
+                    if (video && video.size > 20 * 1024 * 1024) {
+                      window.alert('Please choose a video smaller than 20 MB.');
+                      e.target.value = '';
+                      setFormData({ ...formData, video: null });
+                      return;
+                    }
+                    setFormData({ ...formData, video: video || null });
+                  }}
+                  style={inputStyle}
+                />
+              </div>
               <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
             </form>
           </div>
@@ -774,6 +852,7 @@ function App() {
                       </a>
                     </div>
                   )}
+                  {renderVideo(req.video)}
                   {req.status === 'Accepted' && (
                     <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                   )}
@@ -857,6 +936,42 @@ function App() {
                 <div className="completed-photo-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
+                </div>
+                {renderVideo(req.video)}
+                {renderVideo(req.completionVideo, 'Completed Work Video')}
+                <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                  <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>
+                    Upload completed work video (optional):
+                  </label>
+                  <input
+                    id={`completion-video-${req._id}`}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    onChange={event => setCompletionVideos({ ...completionVideos, [req._id]: event.target.files[0] })}
+                    style={{ ...inputStyle, margin: '4px 0' }}
+                  />
+                  {completionVideos[req._id] && (
+                    <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                      ✓ Video selected: {completionVideos[req._id].name}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => uploadCompletionVideo(req._id)}
+                    disabled={!completionVideos[req._id] || uploadingCompletionVideos[req._id]}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: completionVideos[req._id] && !uploadingCompletionVideos[req._id] ? '#0d6efd' : '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontWeight: 'bold',
+                      cursor: completionVideos[req._id] && !uploadingCompletionVideos[req._id] ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    {uploadingCompletionVideos[req._id] ? 'Uploading...' : 'Upload Completed Work Video'}
+                  </button>
                 </div>
               </div>
             ))}
