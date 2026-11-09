@@ -27,10 +27,13 @@ if (hasCloudinaryConfig) {
   cloudinary.config(cloudinaryConfig);
   storage = new CloudinaryStorage({
     cloudinary,
-    params: {
+    params: (req, file) => ({
       folder: 'indus-hostel-maintenance',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
-    }
+      resource_type: file.mimetype.startsWith('video/') ? 'video' : 'image',
+      allowed_formats: file.mimetype.startsWith('video/')
+        ? ['mp4', 'mov', 'webm']
+        : ['jpg', 'jpeg', 'png', 'webp']
+    })
   });
 } else {
   const uploadDir = path.join(__dirname, '../../uploads');
@@ -49,19 +52,55 @@ if (hasCloudinaryConfig) {
   });
 }
 
-// Filter to allow only image uploads
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  const isImage = file.mimetype.startsWith('image/');
+  const isSupportedVideo = ['video', 'completionVideo'].includes(file.fieldname) &&
+    ['video/mp4', 'video/webm', 'video/quicktime'].includes(file.mimetype);
+
+  if (isImage || isSupportedVideo) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false);
+    cb(new Error('Upload an image or an MP4, WebM, or MOV video.'), false);
   }
 };
 
 const upload = multer({ 
   storage: storage,
   fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // Limit image size to 5MB
+  limits: { fileSize: 20 * 1024 * 1024, files: 2 }
 });
 
-module.exports = { upload, requirePersistentPhotoStorage };
+const requestMediaUpload = (req, res, next) => {
+  handleMediaUpload([
+    { name: 'photo', maxCount: 1 },
+    { name: 'video', maxCount: 1 }
+  ])(req, res, next);
+};
+
+const completionMediaUpload = (req, res, next) => {
+  handleMediaUpload([
+    { name: 'completionPhoto', maxCount: 1 },
+    { name: 'completionVideo', maxCount: 1 }
+  ])(req, res, next);
+};
+
+const handleMediaUpload = (fields) => (req, res, next) => {
+  upload.fields(fields)(req, res, (err) => {
+    if (!err) return next();
+
+    if (err instanceof multer.MulterError) {
+      const error = err.code === 'LIMIT_FILE_SIZE'
+        ? 'Each attachment must be 20 MB or smaller.'
+        : err.message;
+      return res.status(400).json({ success: false, error });
+    }
+
+    if (err.message === 'Upload an image or an MP4, WebM, or MOV video.') {
+      return res.status(400).json({ success: false, error: err.message });
+    }
+
+    next(err);
+  });
+};
+
+module.exports = { requestMediaUpload, completionMediaUpload, requirePersistentPhotoStorage };
