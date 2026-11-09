@@ -95,10 +95,17 @@ const handleMediaUpload = (fields) => (req, res, next) => {
 
       try {
         await Promise.all(uploadedFiles.map(file => new Promise((resolve, reject) => {
-          storage._removeFile(req, file, removeError => {
-            if (removeError) reject(removeError);
-            else resolve();
-          });
+          if (hasCloudinaryConfig) {
+            const resourceType = videoFields.includes(file.fieldname) ? 'video' : 'image';
+            return cloudinary.uploader.destroy(file.filename, {
+              invalidate: true,
+              resource_type: resourceType
+            }, (removeError) => removeError ? reject(removeError) : resolve());
+          }
+
+          return storage._removeFile(req, file, removeError =>
+            removeError ? reject(removeError) : resolve()
+          );
         })));
       } catch (removeError) {
         console.error('Unable to remove rejected media upload:', {
@@ -111,7 +118,7 @@ const handleMediaUpload = (fields) => (req, res, next) => {
         });
       }
 
-      return res.status(400).json({
+      return res.status(413).json({
         success: false,
         error: 'Videos must be 3 MB or smaller.'
       });
