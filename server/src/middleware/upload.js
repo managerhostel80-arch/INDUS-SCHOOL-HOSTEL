@@ -100,7 +100,18 @@ const handleMediaUpload = (fields) => (req, res, next) => {
       return res.status(400).json({ success: false, error: err.message });
     }
 
-    next(err);
+    console.error('Media storage failed during upload:', {
+      name: err.name,
+      message: err.message,
+      http_code: err.http_code
+    });
+    const authenticationFailed = err.http_code === 401 || err.http_code === 403;
+    return res.status(502).json({
+      success: false,
+      error: authenticationFailed
+        ? 'Media storage authentication failed. Check the Cloudinary credentials configured on the backend.'
+        : 'Media storage could not save this file. Check the Cloudinary configuration on the backend and retry.'
+    });
   });
 };
 
