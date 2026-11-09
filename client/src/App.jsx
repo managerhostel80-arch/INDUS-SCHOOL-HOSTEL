@@ -101,11 +101,11 @@ function App() {
     reportedByMobile: '',
     reportedAt: '',
     urgencyLevel: 'Medium',
-    photo: null,
     video: null
   });
 
   const [completionData, setCompletionData] = useState({});
+  const [savingCompletionEvidence, setSavingCompletionEvidence] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
@@ -286,7 +286,7 @@ function App() {
     e.preventDefault();
     if (isSubmittingReport) return;
 
-    const { photo, video, ...reportFields } = formData;
+    const { video, ...reportFields } = formData;
     const data = new FormData();
     Object.keys(reportFields).forEach(key => {
       if (reportFields[key]) data.append(key, reportFields[key]);
@@ -321,9 +321,9 @@ function App() {
 
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
-      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null, video: null });
-      const attachments = { photo, video };
-      if (photo || video) {
+      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', video: null });
+      const attachments = { video };
+      if (video) {
         setPendingReportAttachments({ requestId: result.data._id, attachments });
         uploadReportAttachments(result.data._id, attachments);
       } else {
@@ -347,7 +347,13 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
-      if (!itemComp.completionPhoto && !itemComp.completionVideo) {
+      const request = requests.find(item => item._id === id);
+      if (
+        !itemComp.completionPhoto &&
+        !itemComp.completionVideo &&
+        !request?.completionPhoto &&
+        !request?.completionVideo
+      ) {
         window.alert('Please upload a completed-work photo or video before marking this complaint as done.');
         return;
       }
@@ -370,6 +376,54 @@ function App() {
       await fetchData();
     } catch (err) {
       console.error('Update status error:', err);
+    }
+  };
+
+  const saveCompletionEvidence = async (id) => {
+    const itemCompletion = completionData[id] || {};
+    if (!itemCompletion.completionPhoto && !itemCompletion.completionVideo) {
+      window.alert('Please choose a photo or video to save.');
+      return;
+    }
+
+    const data = new FormData();
+    if (itemCompletion.completionPhoto) data.append('completionPhoto', itemCompletion.completionPhoto);
+    if (itemCompletion.completionVideo) data.append('completionVideo', itemCompletion.completionVideo);
+
+    setSavingCompletionEvidence(previous => ({ ...previous, [id]: true }));
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const responseBody = await res.text();
+      let result;
+      try {
+        result = JSON.parse(responseBody);
+      } catch (parseError) {
+        console.error('Saving work-in-progress evidence returned a non-JSON response:', {
+          status: res.status,
+          contentType: res.headers.get('content-type'),
+          bodyPreview: responseBody.slice(0, 200),
+          parseError
+        });
+        throw new Error(`The server returned an unexpected response (HTTP ${res.status}).`);
+      }
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'Could not save the work photo or video.');
+      }
+
+      setCompletionData(previous => ({
+        ...previous,
+        [id]: { ...previous[id], completionPhoto: null, completionVideo: null }
+      }));
+      await fetchData();
+    } catch (err) {
+      console.error('Save completion evidence error:', err);
+      window.alert(err.message || 'Could not save the work photo or video. Please try again.');
+    } finally {
+      setSavingCompletionEvidence(previous => ({ ...previous, [id]: false }));
     }
   };
 
@@ -761,24 +815,6 @@ function App() {
                 <textarea value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} required style={{...inputStyle, height: '50px'}} />
               </div>
               <div>
-                <label style={{ fontWeight: 'bold' }}>Photo</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => {
-                    const photo = e.target.files[0];
-                    if (photo && photo.size > 20 * 1024 * 1024) {
-                      window.alert('Please choose a photo smaller than 20 MB.');
-                      e.target.value = '';
-                      setFormData({ ...formData, photo: null });
-                      return;
-                    }
-                    setFormData({ ...formData, photo: photo || null });
-                  }}
-                  style={inputStyle}
-                />
-              </div>
-              <div>
                 <label style={{ fontWeight: 'bold' }}>Video (optional, max 20 MB)</label>
                 <input
                   type="file"
@@ -897,7 +933,13 @@ function App() {
               <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
             ) : requests.map(req => {
               const itemCompletion = completionData[req._id] || {};
-              const hasCompletionEvidence = Boolean(itemCompletion.completionPhoto || itemCompletion.completionVideo);
+              const hasCompletionEvidence = Boolean(
+                itemCompletion.completionPhoto ||
+                itemCompletion.completionVideo ||
+                req.completionPhoto ||
+                req.completionVideo
+              );
+              const hasUnsavedCompletionEvidence = Boolean(itemCompletion.completionPhoto || itemCompletion.completionVideo);
               return (
                 <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -926,6 +968,8 @@ function App() {
                   )}
                   {renderVideo(req.video)}
                   {renderVideo(req.progressVideo, 'Work in Progress Video')}
+                  {req.completionPhoto && renderPhoto('Saved Work Photo', req.completionPhoto, `Work photo for ${req.requestId}`)}
+                  {req.completionVideo && renderVideo(req.completionVideo, 'Saved Work Video')}
                   {req.status === 'Accepted' && (
                     <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                   )}
@@ -982,6 +1026,26 @@ function App() {
                         <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
                           ✓ Completed video attached: {itemCompletion.completionVideo.name}
                         </p>
+                      )}
+                      {hasUnsavedCompletionEvidence && (
+                        <button
+                          type="button"
+                          onClick={() => saveCompletionEvidence(req._id)}
+                          disabled={Boolean(savingCompletionEvidence[req._id])}
+                          style={{
+                            width: '100%',
+                            padding: '8px',
+                            background: savingCompletionEvidence[req._id] ? '#6c757d' : '#0d6efd',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            fontWeight: 'bold',
+                            cursor: savingCompletionEvidence[req._id] ? 'wait' : 'pointer',
+                            marginBottom: '6px'
+                          }}
+                        >
+                          {savingCompletionEvidence[req._id] ? 'Saving Photo/Video...' : 'Save Photo/Video'}
+                        </button>
                       )}
                       <input type="text" placeholder="Remarks" value={itemCompletion.remarks || ''} onChange={event => setCompletionData({...completionData, [req._id]: { ...itemCompletion, remarks: event.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                       <button
