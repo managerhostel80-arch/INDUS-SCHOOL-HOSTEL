@@ -62,16 +62,19 @@ exports.createRequest = async (req, res) => {
     });
 
     const savedRequest = await newRequest.save();
-    try {
-      await pushNotifications.notifyNewRequest(savedRequest);
-    } catch (err) {
-      console.error('Unable to send push notifications:', err);
-    }
-    try {
-      await smsNotifications.notifyNewRequest(savedRequest);
-    } catch (err) {
-      console.error('Unable to send SMS notifications:', err);
-    }
+    setImmediate(async () => {
+      const notificationResults = await Promise.allSettled([
+        pushNotifications.notifyNewRequest(savedRequest),
+        smsNotifications.notifyNewRequest(savedRequest)
+      ]);
+
+      notificationResults.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const notificationType = index === 0 ? 'push' : 'SMS';
+          console.error(`Unable to send ${notificationType} notifications:`, result.reason);
+        }
+      });
+    });
 
     res.status(201).json({ success: true, data: savedRequest });
 
