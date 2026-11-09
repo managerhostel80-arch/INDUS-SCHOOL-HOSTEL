@@ -76,7 +76,6 @@ const completionMediaUpload = (req, res, next) => {
     { name: 'photo', maxCount: 1 },
     { name: 'video', maxCount: 1 },
     { name: 'completionPhoto', maxCount: 1 },
-    { name: 'progressPhoto', maxCount: 1 },
     { name: 'progressVideo', maxCount: 1 },
     { name: 'completionVideo', maxCount: 1 }
   ])(req, res, next);
