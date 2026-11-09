@@ -79,6 +79,8 @@ const requestMediaUpload = (req, res, next) => {
 
 const completionMediaUpload = (req, res, next) => {
   handleMediaUpload([
+    { name: 'photo', maxCount: 1 },
+    { name: 'video', maxCount: 1 },
     { name: 'completionPhoto', maxCount: 1 },
     { name: 'progressVideo', maxCount: 1 },
     { name: 'completionVideo', maxCount: 1 }
