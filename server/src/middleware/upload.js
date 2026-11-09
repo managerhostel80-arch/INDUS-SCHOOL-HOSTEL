@@ -4,6 +4,8 @@ const fs = require('fs');
 const { v2: cloudinary } = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
+const maxVideoSize = 3 * 1024 * 1024;
+const videoFields = ['video', 'progressVideo', 'completionVideo'];
 const cloudinaryConfig = {
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -82,8 +84,38 @@ const completionMediaUpload = (req, res, next) => {
 };
 
 const handleMediaUpload = (fields) => (req, res, next) => {
-  upload.fields(fields)(req, res, (err) => {
-    if (!err) return next();
+  upload.fields(fields)(req, res, async (err) => {
+    if (!err) {
+      const uploadedFiles = Object.values(req.files || {}).flat();
+      const hasOversizedVideo = uploadedFiles.some(file =>
+        videoFields.includes(file.fieldname) && file.size > maxVideoSize
+      );
+
+      if (!hasOversizedVideo) return next();
+
+      try {
+        await Promise.all(uploadedFiles.map(file => new Promise((resolve, reject) => {
+          storage._removeFile(req, file, removeError => {
+            if (removeError) reject(removeError);
+            else resolve();
+          });
+        })));
+      } catch (removeError) {
+        console.error('Unable to remove rejected media upload:', {
+          name: removeError.name,
+          message: removeError.message
+        });
+        return res.status(500).json({
+          success: false,
+          error: 'The video exceeds the 3 MB limit, and temporary uploaded media could not be cleaned up.'
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        error: 'Videos must be 3 MB or smaller.'
+      });
+    }
 
     if (err instanceof multer.MulterError) {
       const error = err.code === 'LIMIT_FILE_SIZE'
