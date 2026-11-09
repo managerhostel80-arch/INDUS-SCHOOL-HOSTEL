@@ -102,6 +102,8 @@ function App() {
   });
 
   const [completionData, setCompletionData] = useState({});
+  const [progressVideos, setProgressVideos] = useState({});
+  const [uploadingProgressVideos, setUploadingProgressVideos] = useState({});
   const [completionVideos, setCompletionVideos] = useState({});
   const [uploadingCompletionVideos, setUploadingCompletionVideos] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
@@ -328,6 +330,38 @@ function App() {
       window.alert('Could not upload the completed work video.');
     } finally {
       setUploadingCompletionVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
+    }
+  };
+
+  const uploadProgressVideo = async (id) => {
+    const video = progressVideos[id];
+    if (!video) {
+      window.alert('Please select a work-in-progress video to upload.');
+      return;
+    }
+
+    const data = new FormData();
+    data.append('progressVideo', video);
+    setUploadingProgressVideos({ ...uploadingProgressVideos, [id]: true });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not upload the work-in-progress video.');
+        return;
+      }
+
+      setProgressVideos(({ [id]: _uploadedVideo, ...remainingVideos }) => remainingVideos);
+      await fetchData();
+    } catch (err) {
+      console.error('Work-in-progress video upload error:', err);
+      window.alert('Could not upload the work-in-progress video.');
+    } finally {
+      setUploadingProgressVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
     }
   };
 
@@ -853,11 +887,45 @@ function App() {
                     </div>
                   )}
                   {renderVideo(req.video)}
+                  {renderVideo(req.progressVideo, 'Work in Progress Video')}
                   {req.status === 'Accepted' && (
                     <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                   )}
                   {req.status === 'In Progress' && (
                     <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      <label htmlFor={`progress-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                        Upload work-in-progress video (optional):
+                      </label>
+                      <input
+                        id={`progress-video-${req._id}`}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        onChange={event => setProgressVideos({ ...progressVideos, [req._id]: event.target.files[0] })}
+                        style={{ ...inputStyle, margin: '4px 0' }}
+                      />
+                      {progressVideos[req._id] && (
+                        <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                          ✓ Video selected: {progressVideos[req._id].name}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => uploadProgressVideo(req._id)}
+                        disabled={!progressVideos[req._id] || uploadingProgressVideos[req._id]}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          marginBottom: '8px',
+                          background: progressVideos[req._id] && !uploadingProgressVideos[req._id] ? '#0d6efd' : '#6c757d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                          cursor: progressVideos[req._id] && !uploadingProgressVideos[req._id] ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        {uploadingProgressVideos[req._id] ? 'Uploading...' : 'Upload Work-in-Progress Video'}
+                      </button>
                       <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
                         Upload completed work photo (Required to enable Mark Done):
                       </label>
@@ -938,6 +1006,7 @@ function App() {
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
                 {renderVideo(req.video)}
+                {renderVideo(req.progressVideo, 'Work in Progress Video')}
                 {renderVideo(req.completionVideo, 'Completed Work Video')}
                 <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
                   <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>
