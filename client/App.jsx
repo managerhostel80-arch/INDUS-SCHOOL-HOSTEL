@@ -1,0 +1,1108 @@
+import React, { useState, useEffect } from 'react';
+import './App.css';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
+const BLOCKED_NOTIFICATION_MESSAGE = 'Notifications are blocked on this device. In Chrome, open Settings > Site settings > Notifications and allow this site. For an installed shortcut, also check Android Settings > Apps > Hostel 360 > Notifications. Reopen the app and tap Enable notifications again.';
+
+const urlBase64ToUint8Array = (base64String) => {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from(rawData, character => character.charCodeAt(0));
+};
+
+const areKeysEqual = (currentKey, configuredKey) => {
+  if (!currentKey || currentKey.byteLength !== configuredKey.byteLength) return false;
+  const currentBytes = new Uint8Array(currentKey);
+  return configuredKey.every((byte, index) => byte === currentBytes[index]);
+};
+
+// Bulletproof string-splitting extractor for DD/MM/YYYY
+const formatDMYDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  
+  if (typeof dateString === 'string' && dateString.includes('-')) {
+    try {
+      const [datePart, timePart] = dateString.split('T');
+      const [year, month, day] = datePart.split('-');
+      
+      if (year && month && day) {
+        let formattedTime = '';
+        if (timePart) {
+          const timeClean = timePart.split('.')[0];
+          const [h, m] = timeClean.split(':');
+          let hours = parseInt(h, 10);
+          const ampm = hours >= 12 ? 'pm' : 'am';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          formattedTime = `, ${String(hours).padStart(2, '0')}:${m} ${ampm}`;
+        }
+        return `${day}/${month}/${year}${formattedTime}`;
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = String(hours).padStart(2, '0');
+
+  return `${day}/${month}/${year}, ${strHours}:${minutes} ${ampm}`;
+};
+
+const formatLiveClock = (date) => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const strHours = String(hours).padStart(2, '0');
+
+  return `${day}/${month}/${year} - ${strHours}:${minutes}:${seconds} ${ampm}`;
+};
+
+function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userRole, setUserRole] = useState(''); // 'admin' or 'user'
+  const [loginData, setLoginData] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  const [activeTab, setActiveTab] = useState('admin-dashboard');
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
+  const [submittedRequest, setSubmittedRequest] = useState(null);
+
+  const [formData, setFormData] = useState({
+    category: 'Electrical',
+    location: '',
+    problemDescription: '',
+    reportedByName: '',
+    reportedByMobile: '',
+    reportedAt: '',
+    urgencyLevel: 'Medium',
+    photo: null,
+    video: null
+  });
+
+  const [completionData, setCompletionData] = useState({});
+  const [progressVideos, setProgressVideos] = useState({});
+  const [uploadingProgressVideos, setUploadingProgressVideos] = useState({});
+  const [completionVideos, setCompletionVideos] = useState({});
+  const [uploadingCompletionVideos, setUploadingCompletionVideos] = useState({});
+  const [selectedTechs, setSelectedTechs] = useState({});
+  const [dbStats, setDbStats] = useState({ requests: 0 });
+  const [pushStatus, setPushStatus] = useState('');
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+  const [currentTime, setCurrentTime] = useState('');
+
+  useEffect(() => {
+    const updateISTClock = () => {
+      const now = new Date();
+      setCurrentTime(formatLiveClock(now));
+    };
+
+    updateISTClock();
+    const interval = setInterval(updateISTClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [requestsRes, dbRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/requests`),
+        fetch(`${API_BASE_URL}/api/db/stats`).catch(() => null)
+      ]);
+
+      const requestsResult = requestsRes ? await requestsRes.json() : null;
+      if (requestsResult?.success) {
+        setRequests(requestsResult.data);
+        setStats(requestsResult.stats);
+        if (Array.isArray(requestsResult.data) && requestsResult.data.length > 0) {
+          setSubmittedRequest(prev => prev ?? requestsResult.data[0]);
+        }
+      }
+
+      if (dbRes) {
+        const dbResult = await dbRes.json();
+        if (dbResult?.success) setDbStats(dbResult.stats);
+      }
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) fetchData();
+  }, [isLoggedIn]);
+
+  const handleLoginSubmit = (event) => {
+    event.preventDefault();
+
+    const username = loginData.username.trim();
+    const password = loginData.password;
+
+    if (username === 'admin' && password === 'hostel360') {
+      setUserRole('admin');
+      setIsLoggedIn(true);
+      setActiveTab('admin-dashboard');
+      setLoginError('');
+    } else if (username === 'staff' && password === 'user123') {
+      setUserRole('user');
+      setIsLoggedIn(true);
+      setActiveTab('report'); 
+      setLoginError('');
+    } else {
+      setLoginError('Incorrect username or password. Please try again.');
+    }
+  };
+
+  const handleEnableNotifications = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      setPushStatus('Notifications are not supported in this browser.');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      setPushStatus(BLOCKED_NOTIFICATION_MESSAGE);
+      return;
+    }
+
+    setIsEnablingPush(true);
+    setPushStatus('');
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        setPushStatus(
+          permission === 'denied'
+            ? BLOCKED_NOTIFICATION_MESSAGE
+            : 'Allow notifications when your browser asks to receive complaint alerts.'
+        );
+        return;
+      }
+
+      const keyResponse = await fetch(`${API_BASE_URL}/api/push/public-key`);
+      const keyResult = await keyResponse.json();
+      if (!keyResponse.ok || !keyResult.success) {
+        throw new Error(keyResult.error || 'Could not load notification settings.');
+      }
+
+      await navigator.serviceWorker.register('/service-worker.js');
+      const registration = await navigator.serviceWorker.ready;
+      let subscription = await registration.pushManager.getSubscription();
+      const applicationServerKey = urlBase64ToUint8Array(keyResult.publicKey);
+      
+      if (subscription && !areKeysEqual(subscription.options.applicationServerKey, applicationServerKey)) {
+        await subscription.unsubscribe();
+        subscription = null;
+      }
+
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+      }
+
+      const subscribeResponse = await fetch(`${API_BASE_URL}/api/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription.toJSON())
+      });
+      const subscribeResult = await subscribeResponse.json();
+      if (!subscribeResponse.ok || !subscribeResult.success) {
+        throw new Error(subscribeResult.error || 'Could not save this device for notifications.');
+      }
+
+      setPushStatus('Notifications enabled on this device. Enable them separately on each device that should receive alerts.');
+      alert('Notifications enabled successfully on this device!');
+    } catch (err) {
+      console.error('Unable to enable notifications:', err);
+      setPushStatus(err.message || 'Could not enable notifications on this device.');
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    const data = new FormData();
+    Object.keys(formData).forEach(key => {
+      if (formData[key]) data.append(key, formData[key]);
+    });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests`, {
+        method: 'POST',
+        body: data
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not submit the complaint.');
+        return;
+      }
+
+      setSubmittedRequest(result.data);
+      setActiveTab('success-screen');
+      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null, video: null });
+      await fetchData();
+    } catch (err) {
+      console.error('Submission error:', err);
+    }
+  };
+
+  const updateStatus = async (id, status, isCompletion = false, assignedName = null, assignedMobile = null) => {
+    const data = new FormData();
+    data.append('status', status);
+    if (assignedName) data.append('assignedName', assignedName);
+    if (assignedMobile) data.append('assignedMobile', assignedMobile);
+
+    if (isCompletion) {
+      const itemComp = completionData[id] || {};
+      if (!itemComp.completionPhoto) {
+        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
+        return;
+      }
+      if (itemComp.remarks) data.append('remarks', itemComp.remarks);
+      data.append('completionPhoto', itemComp.completionPhoto);
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not update the request.');
+        return;
+      }
+
+      await fetchData();
+    } catch (err) {
+      console.error('Update status error:', err);
+    }
+  };
+
+  const uploadCompletionVideo = async (id) => {
+    const video = completionVideos[id];
+    if (!video) {
+      window.alert('Please select a completed work video to upload.');
+      return;
+    }
+
+    const data = new FormData();
+    data.append('completionVideo', video);
+    setUploadingCompletionVideos({ ...uploadingCompletionVideos, [id]: true });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not upload the completed work video.');
+        return;
+      }
+
+      setCompletionVideos(({ [id]: _uploadedVideo, ...remainingVideos }) => remainingVideos);
+      await fetchData();
+    } catch (err) {
+      console.error('Completion video upload error:', err);
+      window.alert('Could not upload the completed work video.');
+    } finally {
+      setUploadingCompletionVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
+    }
+  };
+
+  const uploadProgressVideo = async (id) => {
+    const video = progressVideos[id];
+    if (!video) {
+      window.alert('Please select a work-in-progress video to upload.');
+      return;
+    }
+
+    const data = new FormData();
+    data.append('progressVideo', video);
+    setUploadingProgressVideos({ ...uploadingProgressVideos, [id]: true });
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        window.alert(result.error || 'Could not upload the work-in-progress video.');
+        return;
+      }
+
+      setProgressVideos(({ [id]: _uploadedVideo, ...remainingVideos }) => remainingVideos);
+      await fetchData();
+    } catch (err) {
+      console.error('Work-in-progress video upload error:', err);
+      window.alert('Could not upload the work-in-progress video.');
+    } finally {
+      setUploadingProgressVideos(({ [id]: _uploading, ...remainingUploads }) => remainingUploads);
+    }
+  };
+
+  const handleClearDatabase = async () => {
+    if (!window.confirm('WARNING: This will delete ALL maintenance requests from MongoDB permanently.')) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/db/clear-requests`, { method: 'DELETE' });
+      const result = await res.json();
+      if (result.success) {
+        alert(result.message);
+        await fetchData();
+      }
+    } catch (err) {
+      console.error('Error clearing database:', err);
+    }
+  };
+
+  const getUrgencyBadge = (level) => {
+    let bg = '#6c757d';
+    if (level === 'Urgent') bg = '#dc3545';
+    else if (level === 'High') bg = '#fd7e14';
+    else if (level === 'Medium') bg = '#ffc107';
+
+    return (
+      <span style={{ padding: '2px 6px', borderRadius: '4px', background: bg, color: level === 'Medium' ? '#000' : '#fff', fontSize: '10px', fontWeight: 'bold' }}>
+        {level || 'Medium'}
+      </span>
+    );
+  };
+
+  const getPhotoUrl = (photo) => {
+    if (!photo) return null;
+    const base = photo.startsWith('http') ? photo : `${API_BASE_URL}${photo}`;
+    return `${base}?t=${Date.now()}`;
+  };
+
+  const getVideoUrl = (video) => {
+    if (!video) return null;
+    return video.startsWith('http') ? video : `${API_BASE_URL}${video}`;
+  };
+
+  const renderVideo = (video, label = 'Complaint Video') => {
+    const videoUrl = getVideoUrl(video);
+    if (!videoUrl) return null;
+
+    return (
+      <div style={{ margin: '8px 0', maxWidth: '480px' }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
+        <video
+          src={videoUrl}
+          controls
+          preload="metadata"
+          style={{ display: 'block', width: '100%', maxHeight: '320px', borderRadius: '4px', background: '#111' }}
+        >
+          Your browser does not support video playback.
+        </video>
+      </div>
+    );
+  };
+
+  const renderPhoto = (label, photo, alt, showLabel = true) => {
+    const photoUrl = getPhotoUrl(photo);
+    return (
+      <div style={{ minWidth: 0, width: 'fit-content', maxWidth: '320px' }}>
+        {showLabel && <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>}
+        {photoUrl ? (
+          <a href={photoUrl} target="_blank" rel="noreferrer" style={{ display: 'block', textDecoration: 'none' }}>
+            <div style={{
+              border: '4px solid #0056b3',
+              borderRadius: '8px',
+              padding: '6px',
+              background: '#ffffff',
+              display: 'inline-block',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.15)'
+            }}>
+              <img
+                src={photoUrl}
+                alt={alt}
+                style={{ 
+                  display: 'block', 
+                  width: 'auto', 
+                  height: 'auto', 
+                  maxWidth: '100%', 
+                  maxHeight: '160px', 
+                  objectFit: 'contain'
+                }}
+              />
+            </div>
+          </a>
+        ) : (
+          <span style={{ color: '#666' }}>Photo not available</span>
+        )}
+      </div>
+    );
+  };
+
+  const renderRequestDetails = (req, includeComplaintPhoto = true) => {
+    return (
+      <div>
+        <p style={{ margin: '3px 0' }}>Loc: {req.location}</p>
+        <p style={{ margin: '3px 0' }}>Problem: {req.problemDescription}</p>
+        <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+        <p style={{ margin: '3px 0' }}>Mobile: {req.reportedByMobile || 'N/A'}</p>
+        <p style={{ margin: '3px 0' }}>
+          Reported at: {formatDMYDate(req.reportedAt)}
+        </p>
+        {(req.assignedName || req.assignedMobile) && (
+          <>
+            <p style={{ margin: '3px 0' }}>Assigned to: {req.assignedName || 'N/A'}</p>
+            <p style={{ margin: '3px 0' }}>Technician mobile: {req.assignedMobile || 'N/A'}</p>
+          </>
+        )}
+        {includeComplaintPhoto && req.photo && (
+          <div style={{ margin: '8px 0' }}>
+            {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
+          </div>
+        )}
+        {renderVideo(req.video)}
+      </div>
+    );
+  };
+
+  const filteredRequests = filterCategory === 'All' 
+    ? requests 
+    : requests.filter(r => r.category === filterCategory);
+
+  const completedJobs = requests.filter(r => r.status === 'Completed');
+  const filteredCompletedJobs = completedFilterCategory === 'All'
+    ? completedJobs
+    : completedJobs.filter(r => r.category === completedFilterCategory);
+
+  const newComplaintJobs = requests.filter(r => r.status === 'New');
+  const requestStatusCounts = filteredRequests.reduce((counts, request) => {
+    counts[request.status] = (counts[request.status] || 0) + 1;
+    return counts;
+  }, {});
+
+  if (!isLoggedIn) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+          boxSizing: 'border-box',
+          background: 'linear-gradient(rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.35)), url("/school-background.jpg") center / cover no-repeat',
+          fontFamily: 'Arial, sans-serif'
+        }}
+      >
+        <section
+          style={{
+            width: '100%',
+            maxWidth: '460px',
+            padding: '28px',
+            boxSizing: 'border-box',
+            borderRadius: '10px',
+            background: 'rgba(255, 255, 255, 0.95)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
+          }}
+        >
+          <header style={{ marginBottom: '24px', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+              <img src="/school-logo-left.png" alt="Logo Left" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 0 }}>
+                <h1 style={{ margin: '0 0 4px 0', color: '#1e40af', fontSize: '14px', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                  Montessori Indus Residential School
+                </h1>
+                <p style={{ margin: 0, color: '#333', fontSize: '7px', fontWeight: 'bold' }}>
+                  Hostel 360 – Maintenance System
+                </p>
+              </div>
+              <img src="/school-logo-right.jpg" alt="Logo Right" style={{ width: '45px', height: '45px', objectFit: 'contain', flexShrink: 0 }} />
+            </div>
+          </header>
+
+          <form onSubmit={handleLoginSubmit}>
+            <label htmlFor="login-username" style={{ display: 'block', marginBottom: '6px', fontWeight: 'bold', fontSize: '12px' }}>
+              Username
+            </label>
+            <input
+              id="login-username"
+              name="username"
+              type="text"
+              autoComplete="username"
+              required
+              value={loginData.username}
+              onChange={event => setLoginData({ ...loginData, username: event.target.value })}
+              style={loginInputStyle}
+            />
+
+            <label htmlFor="login-password" style={{ display: 'block', margin: '14px 0 6px', fontWeight: 'bold', fontSize: '12px' }}>
+              Password
+            </label>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={loginData.password}
+              onChange={event => setLoginData({ ...loginData, password: event.target.value })}
+              style={loginInputStyle}
+            />
+
+            {loginError && (
+              <p role="alert" style={{ margin: '12px 0 0', color: '#b91c1c', fontSize: '13px', textAlign: 'center' }}>
+                {loginError}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                marginTop: '20px',
+                padding: '12px',
+                border: 0,
+                borderRadius: '5px',
+                background: '#1d4ed8',
+                color: '#fff',
+                fontSize: '15px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Log in
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
+      
+      {/* Header with School Name */}
+      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '12px', width: '100%', boxSizing: 'border-box', textAlign: 'center' }}>
+        <h2 style={{ margin: '0 0 2px 0', fontSize: '15px', wordBreak: 'break-word', fontWeight: 'bold', textAlign: 'center', whiteSpace: 'nowrap' }}>Montessori Indus Residential School</h2>
+        <h3 style={{ margin: '0 0 4px 0', fontSize: '7.5px', opacity: 0.95, fontWeight: 'bold', textAlign: 'center' }}>
+          Hostel 360 – Maintenance System ({userRole === 'admin' ? 'Admin' : 'Staff User'})
+        </h3>
+
+        {/* Live IST Clock strictly in DD/MM/YYYY format */}
+        {['new-complaint-view', 'dashboard', 'electrician-in-progress', 'completed-status'].includes(activeTab) && currentTime && (
+          <div style={{ margin: '2px 0 6px 0', fontSize: '10px', background: 'rgba(0, 0, 0, 0.25)', display: 'inline-block', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+            IST (DD/MM/YYYY): {currentTime}
+          </div>
+        )}
+        
+        {/* Navigation Tabs Bar */}
+        <nav className="app-nav-tabs" aria-label="Main navigation">
+          <div className="app-nav-row app-nav-row-primary" style={{ display: 'flex', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+            {userRole === 'admin' && (
+              <button onClick={() => setActiveTab('admin-dashboard')} style={navTabStyle(activeTab === 'admin-dashboard')}>Overview</button>
+            )}
+            <button onClick={() => setActiveTab('report')} style={navTabStyle(activeTab === 'report')}>Report a Problem</button>
+            <button onClick={() => setActiveTab('new-complaint-view')} style={navTabStyle(activeTab === 'new-complaint-view')}>New Complaints</button>
+            <button onClick={() => setActiveTab('electrician-in-progress')} style={navTabStyle(activeTab === 'electrician-in-progress')}>Work in Progress</button>
+            <button onClick={() => setActiveTab('completed-status')} style={navTabStyle(activeTab === 'completed-status')}>Completed</button>
+            <button onClick={() => setActiveTab('dashboard')} style={navTabStyle(activeTab === 'dashboard')}>All Requests</button>
+            {userRole === 'admin' && (
+              <button onClick={() => setActiveTab('db-management')} style={navTabStyle(activeTab === 'db-management')}>Admin Settings</button>
+            )}
+          </div>
+        </nav>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setIsLoggedIn(false);
+              setUserRole('');
+              setLoginData({ username: '', password: '' });
+              setActiveTab('admin-dashboard');
+            }}
+            style={{ padding: '6px 10px', border: 0, borderRadius: '4px', background: '#dc3545', color: 'white', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+          >
+            Log out
+          </button>
+          <button
+            type="button"
+            onClick={handleEnableNotifications}
+            disabled={isEnablingPush}
+            style={{ padding: '6px 10px', border: '1px solid white', borderRadius: '4px', background: 'white', color: '#084298', fontSize: '11px', fontWeight: 'bold', cursor: isEnablingPush ? 'wait' : 'pointer' }}
+          >
+            {isEnablingPush ? 'Enabling...' : 'Enable notifications'}
+          </button>
+          {pushStatus && <span role="status" style={{ fontSize: '11px', color: 'white' }}>{pushStatus}</span>}
+        </div>
+      </header>
+
+      {/* Main Content Body */}
+      <div className="app-main" style={{ padding: '10px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+        
+        {/* DASHBOARD TAB (Admin Only) */}
+        {activeTab === 'admin-dashboard' && userRole === 'admin' && (
+          <div className="dashboard-overview">
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Overview</h3>
+            
+            <div className="dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+              <div onClick={() => setActiveTab('new-complaint-view')} style={{ background: '#fff3cd', color: '#664d03', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>NEW</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.new}</div>
+              </div>
+              <div onClick={() => setActiveTab('dashboard')} style={{ background: '#cfe2ff', color: '#084298', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>ACCEPTED</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.accepted}</div>
+              </div>
+              <div onClick={() => setActiveTab('electrician-in-progress')} style={{ background: '#e2f0d9', color: '#276749', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>WORK IN PROGRESS</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{stats.inProgress}</div>
+              </div>
+              <div onClick={() => setActiveTab('completed-status')} style={{ background: '#d1e7dd', color: '#0f5132', padding: '10px', borderRadius: '6px', cursor: 'pointer' }}>
+                <div style={{ fontSize: '10px', fontWeight: 'bold' }}>COMPLETED</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{completedJobs.length}</div>
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Filter Category</h4>
+            <div className="dashboard-category-filters" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                <button key={cat} onClick={() => setFilterCategory(cat)} style={{ padding: '4px 8px', background: filterCategory === cat ? '#0d6efd' : 'white', color: filterCategory === cat ? 'white' : '#333', border: '1px solid #ccc', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <section className="dashboard-request-summary">
+              <h4 style={{ fontSize: '13px', margin: '10px 0 5px 0' }}>Requests</h4>
+              {filteredRequests.length === 0 ? (
+                <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
+              ) : (
+                filteredRequests.map(req => (
+                  <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '12px' }}>{req.requestId} - {req.category}</strong>
+                      {getUrgencyBadge(req.urgencyLevel)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#555', marginTop: '4px' }}>
+                      <p style={{ margin: '3px 0' }}>Status: {req.status}</p>
+                      {renderRequestDetails(req)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </section>
+          </div>
+        )}
+
+        {/* REPORT TAB */}
+        {activeTab === 'report' && (
+          <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Report Issue</h3>
+            <form onSubmit={handleReportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Category</label>
+                <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} style={inputStyle}>
+                  {['Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Urgency</label>
+                <select value={formData.urgencyLevel} onChange={e => setFormData({...formData, urgencyLevel: e.target.value})} style={inputStyle}>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                  <option value="Urgent">Urgent</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Name</label>
+                <input type="text" value={formData.reportedByName} onChange={e => setFormData({...formData, reportedByName: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Mobile</label>
+                <input type="tel" value={formData.reportedByMobile} onChange={e => setFormData({...formData, reportedByMobile: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Date & Time</label>
+                <input type="datetime-local" value={formData.reportedAt} onChange={e => setFormData({...formData, reportedAt: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Location / Room</label>
+                <input type="text" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} required style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Description</label>
+                <textarea value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} required style={{...inputStyle, height: '50px'}} />
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Photo</label>
+                <input type="file" accept="image/*" onChange={e => setFormData({...formData, photo: e.target.files[0]})} style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ fontWeight: 'bold' }}>Video (optional, max 20 MB)</label>
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={e => {
+                    const video = e.target.files[0];
+                    if (video && video.size > 20 * 1024 * 1024) {
+                      window.alert('Please choose a video smaller than 20 MB.');
+                      e.target.value = '';
+                      setFormData({ ...formData, video: null });
+                      return;
+                    }
+                    setFormData({ ...formData, video: video || null });
+                  }}
+                  style={inputStyle}
+                />
+              </div>
+              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
+            </form>
+          </div>
+        )}
+
+        {/* NEW COMPLAINTS TAB */}
+        {activeTab === 'new-complaint-view' && (
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>New Complaints</h3>
+            {newComplaintJobs.length === 0 ? <p style={{ fontSize: '12px' }}>No new complaints.</p> : newComplaintJobs.map(req => {
+              const tech = selectedTechs[req._id] || { name: '', mobile: '' };
+              return (
+                <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <strong>{req.requestId} - {req.category}</strong>
+                    {getUrgencyBadge(req.urgencyLevel)}
+                  </div>
+                  {renderRequestDetails(req)}
+                  <input type="text" placeholder="Tech Name" value={tech.name} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, name: e.target.value }})} style={{...inputStyle, margin: '4px 0'}} />
+                  <input type="tel" placeholder="Tech Mobile" value={tech.mobile} onChange={e => setSelectedTechs({...selectedTechs, [req._id]: { ...tech, mobile: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
+                  <button onClick={() => updateStatus(req._id, 'Accepted', false, tech.name, tech.mobile)} style={{ width: '100%', padding: '8px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Accept</button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* REQUESTS LIST TAB (All Requests) */}
+        {activeTab === 'dashboard' && (
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>
+              All Requests ({filteredRequests.length})
+            </h3>
+            
+            {/* Category Filter Dropdown matching Completed Tab style */}
+            <div className="completed-category-filter">
+              <label htmlFor="all-requests-category-filter-select">Filter by category</label>
+              <select
+                id="all-requests-category-filter-select"
+                value={filterCategory}
+                onChange={event => setFilterCategory(event.target.value)}
+              >
+                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                  <option key={cat} value={cat}>{cat === 'All' ? 'All categories' : cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '6px', marginBottom: '10px' }}>
+              {[
+                ['New', '#fff3cd', '#664d03'],
+                ['Accepted', '#cfe2ff', '#084298'],
+                ['Work in Progress', '#e2f0d9', '#276749'],
+                ['Completed', '#d1e7dd', '#0f5132']
+              ].map(([status, background, color]) => (
+                <div key={status} style={{ background, color, padding: '8px', borderRadius: '6px' }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold' }}>{status.toUpperCase()}</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold' }}>{requestStatusCounts[status] || 0}</div>
+                </div>
+              ))}
+            </div>
+            {filteredRequests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No requests found.</p>
+            ) : filteredRequests.map(req => (
+              <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong>{req.requestId} - {req.category}</strong>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {getUrgencyBadge(req.urgencyLevel)}
+                    <b>{req.status}</b>
+                  </span>
+                </div>
+                {renderRequestDetails(req)}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* WORK IN PROGRESS TAB */}
+        {activeTab === 'electrician-in-progress' && (
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Work in Progress</h3>
+            {requests.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
+            ) : requests.map(req => {
+              const hasCompletedPhoto = Boolean(completionData[req._id]?.completionPhoto);
+              return (
+                <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <strong>{req.requestId} - {req.category}</strong>
+                    <span style={{ color: req.status === 'Completed' ? '#198754' : '#b02a37' }}>
+                      <b>{req.status === 'Completed' ? 'Completed' : req.status}</b>
+                    </span>
+                  </div>
+                  <p style={{ margin: '3px 0' }}>Reported by: {req.reportedByName || 'N/A'}</p>
+                  <p style={{ margin: '3px 0' }}>Taken by: {req.assignedName || 'Not assigned'}</p>
+                  {req.photo && (
+                    <div style={{ margin: '8px 0' }}>
+                      <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>Complaint Photo</div>
+                      <a
+                        href={getPhotoUrl(req.photo)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <img
+                          src={getPhotoUrl(req.photo)}
+                          alt={`Complaint photo for ${req.requestId}`}
+                          style={{ display: 'block', width: '100%', maxHeight: '240px', objectFit: 'contain', borderRadius: '4px', background: '#f4f6f9' }}
+                        />
+                      </a>
+                    </div>
+                  )}
+                  {renderVideo(req.video)}
+                  {renderVideo(req.progressVideo, 'Work in Progress Video')}
+                  {['Accepted', 'In Progress'].includes(req.status) && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      <label htmlFor={`progress-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                        Upload work-in-progress video (optional):
+                      </label>
+                      <input
+                        id={`progress-video-${req._id}`}
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        onChange={event => setProgressVideos({ ...progressVideos, [req._id]: event.target.files[0] })}
+                        style={{ ...inputStyle, margin: '4px 0' }}
+                      />
+                      {progressVideos[req._id] && (
+                        <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                          ✓ Video selected: {progressVideos[req._id].name}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => uploadProgressVideo(req._id)}
+                        disabled={!progressVideos[req._id] || uploadingProgressVideos[req._id]}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          marginBottom: '8px',
+                          background: progressVideos[req._id] && !uploadingProgressVideos[req._id] ? '#0d6efd' : '#6c757d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                          cursor: progressVideos[req._id] && !uploadingProgressVideos[req._id] ? 'pointer' : 'not-allowed'
+                        }}
+                      >
+                        {uploadingProgressVideos[req._id] ? 'Uploading...' : 'Upload Work-in-Progress Video'}
+                      </button>
+                    </div>
+                  )}
+                  {req.status === 'Accepted' && (
+                    <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
+                  )}
+                  {req.status === 'In Progress' && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                        Upload completed work photo (Required to enable Mark Done):
+                      </label>
+                      <input
+                        id={`completion-photo-${req._id}`}
+                        type="file"
+                        accept="image/*"
+                        onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
+                        style={{...inputStyle, margin: '4px 0'}}
+                      />
+                      {hasCompletedPhoto && (
+                        <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                          ✓ Completed photo attached: {completionData[req._id].completionPhoto.name}
+                        </p>
+                      )}
+                      <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
+                      <button
+                        onClick={() => updateStatus(req._id, 'Completed', true)}
+                        disabled={!hasCompletedPhoto}
+                        style={{
+                          width: '100%',
+                          padding: '8px',
+                          background: hasCompletedPhoto ? '#198754' : '#6c757d',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 'bold',
+                          cursor: hasCompletedPhoto ? 'pointer' : 'not-allowed',
+                          opacity: hasCompletedPhoto ? 1 : 0.65
+                        }}
+                      >
+                        {hasCompletedPhoto ? 'Mark Done' : 'Upload Completed Photo to Enable'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* COMPLETED TAB */}
+        {activeTab === 'completed-status' && (
+          <div>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs ({filteredCompletedJobs.length})</h3>
+            
+            <div className="completed-category-filter">
+              <label htmlFor="completed-category-filter-select">Filter completed by category</label>
+              <select
+                id="completed-category-filter-select"
+                value={completedFilterCategory}
+                onChange={event => setCompletedFilterCategory(event.target.value)}
+              >
+                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(cat => (
+                  <option key={cat} value={cat}>{cat === 'All' ? 'All categories' : cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {filteredCompletedJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No completed complaints found for this category.</p>
+            ) : filteredCompletedJobs.map(req => (
+              <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>{req.requestId} - {req.category}</strong>
+                  <b style={{ color: '#198754' }}>Completed</b>
+                </div>
+                {renderRequestDetails(req, false)}
+                <p style={{ margin: '3px 0' }}>Completed by: {req.assignedName || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>Completer mobile: {req.assignedMobile || 'N/A'}</p>
+                <p style={{ margin: '3px 0' }}>
+                  Completed at: {formatDMYDate(req.completedAt)}
+                </p>
+                {req.remarks && <p style={{ margin: '3px 0' }}>Completion remarks: {req.remarks}</p>}
+                
+                <div className="completed-photo-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
+                  {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
+                  {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
+                </div>
+                {renderVideo(req.video)}
+                {renderVideo(req.progressVideo, 'Work in Progress Video')}
+                {renderVideo(req.completionVideo, 'Completed Work Video')}
+                <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                  <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginBottom: '4px' }}>
+                    Upload completed work video (optional):
+                  </label>
+                  <input
+                    id={`completion-video-${req._id}`}
+                    type="file"
+                    accept="video/mp4,video/webm,video/quicktime"
+                    onChange={event => setCompletionVideos({ ...completionVideos, [req._id]: event.target.files[0] })}
+                    style={{ ...inputStyle, margin: '4px 0' }}
+                  />
+                  {completionVideos[req._id] && (
+                    <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
+                      ✓ Video selected: {completionVideos[req._id].name}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => uploadCompletionVideo(req._id)}
+                    disabled={!completionVideos[req._id] || uploadingCompletionVideos[req._id]}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: completionVideos[req._id] && !uploadingCompletionVideos[req._id] ? '#0d6efd' : '#6c757d',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontWeight: 'bold',
+                      cursor: completionVideos[req._id] && !uploadingCompletionVideos[req._id] ? 'pointer' : 'not-allowed'
+                    }}
+                  >
+                    {uploadingCompletionVideos[req._id] ? 'Uploading...' : 'Upload Completed Work Video'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* SETTINGS TAB (Admin Only) */}
+        {activeTab === 'db-management' && userRole === 'admin' && (
+          <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
+            <p>Requests: <b>{dbStats.requests}</b></p>
+            <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
+          </div>
+        )}
+
+        {/* SUCCESS SCREEN */}
+        {activeTab === 'success-screen' && (
+          <div style={{ background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
+            <h3 style={{ color: '#198754', margin: '0 0 10px 0', fontSize: '16px' }}>Successfully Submitted!</h3>
+            <button onClick={() => setActiveTab(userRole === 'admin' ? 'admin-dashboard' : 'report')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Continue</button>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+const navTabStyle = (active) => ({
+  background: active ? '#0b5ed7' : '#1e3a8a',
+  color: 'white',
+  border: 'none',
+  padding: '6px 10px',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  fontSize: '11px',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+  fontWeight: 'bold'
+});
+
+const inputStyle = {
+  width: '100%',
+  padding: '8px',
+  marginTop: '3px',
+  borderRadius: '4px',
+  border: '1px solid #ccc',
+  boxSizing: 'border-box',
+  fontSize: '12px'
+};
+
+const loginInputStyle = {
+  width: '100%',
+  padding: '11px',
+  boxSizing: 'border-box',
+  border: '1px solid #b8c1cc',
+  borderRadius: '5px',
+  fontSize: '16px'
+};
+
+export default App;
