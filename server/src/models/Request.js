@@ -18,6 +18,7 @@ const maintenanceRequestSchema = new mongoose.Schema({
   status: { type: String, enum: ['New', 'Accepted', 'In Progress', 'Completed'], default: 'New' },
   photo: { type: String, default: '' },
   video: { type: String, default: '' },
+  progressPhoto: { type: String, default: '' },
   progressVideo: { type: String, default: '' },
   completionPhoto: { type: String, default: '' },
   completionVideo: { type: String, default: '' },
