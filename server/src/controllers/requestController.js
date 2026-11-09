@@ -103,6 +103,9 @@ exports.updateRequestStatus = async (req, res) => {
     if (files.completionPhoto?.[0]) {
       updateData.completionPhoto = getUploadedFileUrl(files.completionPhoto[0]);
     }
+    if (files.progressPhoto?.[0]) {
+      updateData.progressPhoto = getUploadedFileUrl(files.progressPhoto[0]);
+    }
     if (files.progressVideo?.[0]) {
       updateData.progressVideo = getUploadedFileUrl(files.progressVideo[0]);
     }
