@@ -88,10 +88,6 @@ function App() {
   const [filterCategory, setFilterCategory] = useState('All');
   const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
   const [submittedRequest, setSubmittedRequest] = useState(null);
-  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
-  const [pendingReportAttachments, setPendingReportAttachments] = useState(null);
-  const [isUploadingReportAttachments, setIsUploadingReportAttachments] = useState(false);
-  const [reportAttachmentStatus, setReportAttachmentStatus] = useState('');
 
   const [formData, setFormData] = useState({
     category: 'Electrical',
@@ -105,7 +101,7 @@ function App() {
   });
 
   const [completionData, setCompletionData] = useState({});
-  const [savingCompletionEvidence, setSavingCompletionEvidence] = useState({});
+  const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
@@ -241,79 +237,19 @@ function App() {
     }
   };
 
-  const uploadReportAttachments = async (requestId, attachments) => {
-    const data = new FormData();
-    if (attachments.photo) data.append('photo', attachments.photo);
-    if (attachments.video) data.append('video', attachments.video);
-
-    setIsUploadingReportAttachments(true);
-    setReportAttachmentStatus('Uploading complaint attachments...');
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/requests/${requestId}`, {
-        method: 'PATCH',
-        body: data
-      });
-      const responseBody = await res.text();
-      let result;
-      try {
-        result = JSON.parse(responseBody);
-      } catch (parseError) {
-        console.error('Complaint attachments returned a non-JSON response:', {
-          status: res.status,
-          contentType: res.headers.get('content-type'),
-          bodyPreview: responseBody.slice(0, 200),
-          parseError
-        });
-        throw new Error(`The server returned an unexpected response (HTTP ${res.status}).`);
-      }
-
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || 'The server could not save the attachments.');
-      }
-
-      setPendingReportAttachments(null);
-      setReportAttachmentStatus('Complaint attachments uploaded successfully.');
-      fetchData();
-    } catch (err) {
-      console.error('Complaint attachment upload error:', err);
-      setReportAttachmentStatus(`The complaint was submitted, but its attachments could not be uploaded: ${err.message || 'Please try again.'}`);
-    } finally {
-      setIsUploadingReportAttachments(false);
-    }
-  };
-
   const handleReportSubmit = async (e) => {
     e.preventDefault();
-    if (isSubmittingReport) return;
-
-    const { photo, ...reportFields } = formData;
     const data = new FormData();
-    Object.keys(reportFields).forEach(key => {
-      if (reportFields[key]) data.append(key, reportFields[key]);
+    Object.keys(formData).forEach(key => {
+      if (formData[key]) data.append(key, formData[key]);
     });
 
-    setIsSubmittingReport(true);
     try {
       const res = await fetch(`${API_BASE_URL}/api/requests`, {
         method: 'POST',
         body: data
       });
-      const responseBody = await res.text();
-      let result;
-      try {
-        result = JSON.parse(responseBody);
-      } catch (parseError) {
-        console.error('Report submission returned a non-JSON response:', {
-          status: res.status,
-          contentType: res.headers.get('content-type'),
-          bodyPreview: responseBody.slice(0, 200),
-          parseError
-        });
-        throw new Error(
-          `The complaint server returned an unexpected response (HTTP ${res.status}). Please try again; if the problem continues, contact the administrator.`
-        );
-      }
-
+      const result = await res.json();
       if (!res.ok || !result.success) {
         window.alert(result.error || 'Could not submit the complaint.');
         return;
@@ -322,20 +258,9 @@ function App() {
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
       setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
-      const attachments = { photo };
-      if (photo) {
-        setPendingReportAttachments({ requestId: result.data._id, attachments });
-        uploadReportAttachments(result.data._id, attachments);
-      } else {
-        setPendingReportAttachments(null);
-        setReportAttachmentStatus('');
-      }
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.error('Submission error:', err);
-      window.alert(err.message || 'Could not submit the complaint. Please try again.');
-    } finally {
-      setIsSubmittingReport(false);
     }
   };
 
@@ -347,18 +272,12 @@ function App() {
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
-      const request = requests.find(item => item._id === id);
-      if (
-        !itemComp.completionPhoto &&
-        !itemComp.completionVideo &&
-        !request?.completionPhoto &&
-        !request?.completionVideo
-      ) {
-        window.alert('Please upload a completed-work photo or video before marking this complaint as done.');
+      if (!itemComp.completionPhoto) {
+        window.alert('Please upload a photo of the completed work before marking this complaint as done.');
         return;
       }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
-      if (itemComp.completionPhoto) data.append('completionPhoto', itemComp.completionPhoto);
+      data.append('completionPhoto', itemComp.completionPhoto);
       if (itemComp.completionVideo) data.append('completionVideo', itemComp.completionVideo);
     }
 
@@ -379,51 +298,28 @@ function App() {
     }
   };
 
-  const saveCompletionEvidence = async (id) => {
-    const itemCompletion = completionData[id] || {};
-    if (!itemCompletion.completionPhoto && !itemCompletion.completionVideo) {
-      window.alert('Please choose a photo or video to save.');
-      return;
-    }
-
+  const uploadProgressPhoto = async (id, photo) => {
     const data = new FormData();
-    if (itemCompletion.completionPhoto) data.append('completionPhoto', itemCompletion.completionPhoto);
-    if (itemCompletion.completionVideo) data.append('completionVideo', itemCompletion.completionVideo);
+    data.append('progressPhoto', photo);
+    setUploadingProgressPhoto(previous => ({ ...previous, [id]: true }));
 
-    setSavingCompletionEvidence(previous => ({ ...previous, [id]: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: 'PATCH',
         body: data
       });
-      const responseBody = await res.text();
-      let result;
-      try {
-        result = JSON.parse(responseBody);
-      } catch (parseError) {
-        console.error('Saving work-in-progress evidence returned a non-JSON response:', {
-          status: res.status,
-          contentType: res.headers.get('content-type'),
-          bodyPreview: responseBody.slice(0, 200),
-          parseError
-        });
-        throw new Error(`The server returned an unexpected response (HTTP ${res.status}).`);
-      }
-
+      const result = await res.json();
       if (!res.ok || !result.success) {
-        throw new Error(result.error || 'Could not save the work photo or video.');
+        window.alert(result.error || 'Could not upload the work-in-progress photo.');
+        return;
       }
 
-      setCompletionData(previous => ({
-        ...previous,
-        [id]: { ...previous[id], completionPhoto: null, completionVideo: null }
-      }));
       await fetchData();
     } catch (err) {
-      console.error('Save completion evidence error:', err);
-      window.alert(err.message || 'Could not save the work photo or video. Please try again.');
+      console.error('Work-in-progress photo upload error:', err);
+      window.alert(err.message || 'Could not upload the work-in-progress photo.');
     } finally {
-      setSavingCompletionEvidence(previous => ({ ...previous, [id]: false }));
+      setUploadingProgressPhoto(previous => ({ ...previous, [id]: false }));
     }
   };
 
@@ -465,21 +361,31 @@ function App() {
     return video.startsWith('http') ? video : `${API_BASE_URL}${video}`;
   };
 
-  const renderVideo = (video, label = 'Complaint Video') => {
+  const renderVideo = (label, video, title) => {
     const videoUrl = getVideoUrl(video);
     if (!videoUrl) return null;
 
     return (
-      <div style={{ margin: '8px 0', maxWidth: '480px' }}>
+      <div key={label} style={{ minWidth: 0, width: '100%', maxWidth: '480px' }}>
         <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{label}</div>
         <video
-          src={videoUrl}
           controls
+          playsInline
           preload="metadata"
-          style={{ display: 'block', width: '100%', maxHeight: '320px', borderRadius: '4px', background: '#111' }}
+          aria-label={title}
+          style={{ display: 'block', width: '100%', maxHeight: '280px', borderRadius: '4px', background: '#000' }}
         >
+          <source src={videoUrl} />
           Your browser does not support video playback.
         </video>
+        <a
+          href={videoUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{ display: 'inline-block', marginTop: '6px', color: '#0d6efd', fontWeight: 'bold' }}
+        >
+          Open video
+        </a>
       </div>
     );
   };
@@ -541,7 +447,6 @@ function App() {
             {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
           </div>
         )}
-        {renderVideo(req.video)}
       </div>
     );
   };
@@ -815,39 +720,10 @@ function App() {
                 <textarea value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} required style={{...inputStyle, height: '50px'}} />
               </div>
               <div>
-                <label style={{ fontWeight: 'bold' }}>Photo (optional, max 20 MB)</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => {
-                    const photo = e.target.files[0];
-                    if (photo && photo.size > 20 * 1024 * 1024) {
-                      window.alert('Please choose a photo smaller than 20 MB.');
-                      e.target.value = '';
-                      setFormData({ ...formData, photo: null });
-                      return;
-                    }
-                    setFormData({ ...formData, photo: photo || null });
-                  }}
-                  style={inputStyle}
-                />
+                <label style={{ fontWeight: 'bold' }}>Photo</label>
+                <input type="file" accept="image/*" onChange={e => setFormData({...formData, photo: e.target.files[0]})} style={inputStyle} />
               </div>
-              <button
-                type="submit"
-                disabled={isSubmittingReport}
-                style={{
-                  padding: '10px',
-                  background: isSubmittingReport ? '#6c757d' : '#0d6efd',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontWeight: 'bold',
-                  marginTop: '6px',
-                  cursor: isSubmittingReport ? 'wait' : 'pointer'
-                }}
-              >
-                {isSubmittingReport ? 'Submitting report...' : 'Submit'}
-              </button>
+              <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
             </form>
           </div>
         )}
@@ -932,14 +808,8 @@ function App() {
             {requests.length === 0 ? (
               <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
             ) : requests.map(req => {
-              const itemCompletion = completionData[req._id] || {};
-              const hasCompletionEvidence = Boolean(
-                itemCompletion.completionPhoto ||
-                itemCompletion.completionVideo ||
-                req.completionPhoto ||
-                req.completionVideo
-              );
-              const hasUnsavedCompletionEvidence = Boolean(itemCompletion.completionPhoto || itemCompletion.completionVideo);
+              const hasCompletedPhoto = Boolean(completionData[req._id]?.completionPhoto);
+              const hasCompletionVideo = Boolean(completionData[req._id]?.completionVideo);
               return (
                 <div key={req._id} style={{ background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -966,104 +836,86 @@ function App() {
                       </a>
                     </div>
                   )}
-                  {renderVideo(req.video)}
-                  {renderVideo(req.progressVideo, 'Work in Progress Video')}
-                  {req.completionPhoto && renderPhoto('Saved Work Photo', req.completionPhoto, `Work photo for ${req.requestId}`)}
-                  {req.completionVideo && renderVideo(req.completionVideo, 'Saved Work Video')}
+                  {req.progressPhoto && (
+                    <div style={{ margin: '8px 0' }}>
+                      {renderPhoto('Work in Progress Photo', req.progressPhoto, `Work in progress for ${req.requestId}`)}
+                    </div>
+                  )}
                   {req.status === 'Accepted' && (
                     <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                   )}
                   {req.status === 'In Progress' && (
                     <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      <label htmlFor={`progress-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
+                        Upload work-in-progress photo:
+                      </label>
+                      <input
+                        id={`progress-photo-${req._id}`}
+                        type="file"
+                        accept="image/*"
+                        disabled={Boolean(uploadingProgressPhoto[req._id])}
+                        onChange={e => {
+                          const photo = e.target.files?.[0];
+                          e.target.value = '';
+                          if (photo) uploadProgressPhoto(req._id, photo);
+                        }}
+                        style={{...inputStyle, margin: '4px 0'}}
+                      />
+                      {uploadingProgressPhoto[req._id] && (
+                        <p role="status" style={{ margin: '2px 0 6px', color: '#084298', fontSize: '11px' }}>
+                          Uploading work-in-progress photo...
+                        </p>
+                      )}
                       <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload completed work photo or video (required to enable Mark Done):
+                        Upload completed work photo (Required to enable Mark Done):
                       </label>
                       <input
                         id={`completion-photo-${req._id}`}
                         type="file"
                         accept="image/*"
-                        onChange={event => {
-                          const photo = event.target.files[0];
-                          if (photo && photo.size > 20 * 1024 * 1024) {
-                            window.alert('Please choose a completed-work photo smaller than 20 MB.');
-                            event.target.value = '';
-                            return;
-                          }
-                          setCompletionData({
-                            ...completionData,
-                            [req._id]: { ...itemCompletion, completionPhoto: photo || null }
-                          });
-                        }}
+                        onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), completionPhoto: e.target.files[0] }})}
                         style={{...inputStyle, margin: '4px 0'}}
                       />
-                      {itemCompletion.completionPhoto && (
+                      {hasCompletedPhoto && (
                         <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
-                          ✓ Completed photo attached: {itemCompletion.completionPhoto.name}
+                          ✓ Completed photo attached: {completionData[req._id].completionPhoto.name}
                         </p>
                       )}
                       <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Or upload completed work video (MP4, WebM, or MOV):
+                        Upload completion video (Optional):
                       </label>
                       <input
                         id={`completion-video-${req._id}`}
                         type="file"
                         accept="video/mp4,video/webm,video/quicktime"
-                        onChange={event => {
-                          const video = event.target.files[0];
-                          if (video && video.size > 20 * 1024 * 1024) {
-                            window.alert('Please choose a completed-work video smaller than 20 MB.');
-                            event.target.value = '';
-                            return;
-                          }
-                          setCompletionData({
-                            ...completionData,
-                            [req._id]: { ...itemCompletion, completionVideo: video || null }
-                          });
-                        }}
+                        onChange={e => setCompletionData({
+                          ...completionData,
+                          [req._id]: { ...(completionData[req._id] || {}), completionVideo: e.target.files?.[0] || null }
+                        })}
                         style={{...inputStyle, margin: '4px 0'}}
                       />
-                      {itemCompletion.completionVideo && (
+                      {hasCompletionVideo && (
                         <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
-                          ✓ Completed video attached: {itemCompletion.completionVideo.name}
+                          Completion video attached: {completionData[req._id].completionVideo.name}
                         </p>
                       )}
-                      {hasUnsavedCompletionEvidence && (
-                        <button
-                          type="button"
-                          onClick={() => saveCompletionEvidence(req._id)}
-                          disabled={Boolean(savingCompletionEvidence[req._id])}
-                          style={{
-                            width: '100%',
-                            padding: '8px',
-                            background: savingCompletionEvidence[req._id] ? '#6c757d' : '#0d6efd',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '4px',
-                            fontWeight: 'bold',
-                            cursor: savingCompletionEvidence[req._id] ? 'wait' : 'pointer',
-                            marginBottom: '6px'
-                          }}
-                        >
-                          {savingCompletionEvidence[req._id] ? 'Saving Photo/Video...' : 'Save Photo/Video'}
-                        </button>
-                      )}
-                      <input type="text" placeholder="Remarks" value={itemCompletion.remarks || ''} onChange={event => setCompletionData({...completionData, [req._id]: { ...itemCompletion, remarks: event.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
+                      <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                       <button
                         onClick={() => updateStatus(req._id, 'Completed', true)}
-                        disabled={!hasCompletionEvidence}
+                        disabled={!hasCompletedPhoto}
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: hasCompletionEvidence ? '#198754' : '#6c757d',
+                          background: hasCompletedPhoto ? '#198754' : '#6c757d',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           fontWeight: 'bold',
-                          cursor: hasCompletionEvidence ? 'pointer' : 'not-allowed',
-                          opacity: hasCompletionEvidence ? 1 : 0.65
+                          cursor: hasCompletedPhoto ? 'pointer' : 'not-allowed',
+                          opacity: hasCompletedPhoto ? 1 : 0.65
                         }}
                       >
-                        {hasCompletionEvidence ? 'Mark Done' : 'Upload a Photo or Video to Enable'}
+                        {hasCompletedPhoto ? 'Mark Done' : 'Upload Completed Photo to Enable'}
                       </button>
                     </div>
                   )}
@@ -1109,11 +961,21 @@ function App() {
                 
                 <div className="completed-photo-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
+                  {renderPhoto('Work in Progress Photo', req.progressPhoto, `Work in progress for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
-                {renderVideo(req.video)}
-                {renderVideo(req.progressVideo, 'Work in Progress Video')}
-                {renderVideo(req.completionVideo, 'Completed Work Video')}
+                <section aria-label={`Videos for ${req.requestId}`} style={{ marginTop: '12px' }}>
+                  <h4 style={{ margin: '0 0 8px', fontSize: '13px' }}>Videos</h4>
+                  {req.completionVideo || req.progressVideo || req.video ? (
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      {renderVideo('Completion Video', req.completionVideo, `Completion video for ${req.requestId}`)}
+                      {renderVideo('Work in Progress Video', req.progressVideo, `Work in progress video for ${req.requestId}`)}
+                      {renderVideo('Request Video', req.video, `Request video for ${req.requestId}`)}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, color: '#666' }}>No video is attached to this completed request.</p>
+                  )}
+                </section>
               </div>
             ))}
           </div>
@@ -1132,23 +994,6 @@ function App() {
         {activeTab === 'success-screen' && (
           <div style={{ background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
             <h3 style={{ color: '#198754', margin: '0 0 10px 0', fontSize: '16px' }}>Successfully Submitted!</h3>
-            {submittedRequest?.requestId && (
-              <p style={{ margin: '0 0 8px', fontSize: '12px' }}>Complaint ID: <b>{submittedRequest.requestId}</b></p>
-            )}
-            {reportAttachmentStatus && (
-              <p role="status" style={{ margin: '0 0 10px', color: isUploadingReportAttachments ? '#084298' : pendingReportAttachments ? '#b02a37' : '#198754', fontSize: '12px' }}>
-                {reportAttachmentStatus}
-              </p>
-            )}
-            {pendingReportAttachments && !isUploadingReportAttachments && (
-              <button
-                type="button"
-                onClick={() => uploadReportAttachments(pendingReportAttachments.requestId, pendingReportAttachments.attachments)}
-                style={{ width: '100%', padding: '10px', background: '#fd7e14', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginBottom: '8px' }}
-              >
-                Retry Attachment Upload
-              </button>
-            )}
             <button onClick={() => setActiveTab(userRole === 'admin' ? 'admin-dashboard' : 'report')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Continue</button>
           </div>
         )}
