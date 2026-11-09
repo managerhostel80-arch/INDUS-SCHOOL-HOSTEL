@@ -1,7 +1,8 @@
 const MaintenanceRequest = require('../models/Request');
 const pushNotifications = require('../services/pushNotifications');
+const smsNotifications = require('../services/smsNotifications');
 
-const getUploadedPhotoUrl = (file) => (
+const getUploadedFileUrl = (file) => (
   file?.path?.startsWith('http') ? file.path : file ? `/uploads/${file.filename}` : ''
 );
 
@@ -40,7 +41,9 @@ exports.createRequest = async (req, res) => {
       return res.status(400).json({ success: false, error: 'A valid urgency level is required.' });
     }
     
-    const photo = getUploadedPhotoUrl(req.file);
+    const files = req.files || {};
+    const photo = getUploadedFileUrl(files.photo?.[0]);
+    const video = getUploadedFileUrl(files.video?.[0]);
     const count = await MaintenanceRequest.countDocuments();
     const requestId = `MNT-${String(count + 1).padStart(5, '0')}`;
 
@@ -54,6 +57,7 @@ exports.createRequest = async (req, res) => {
       reportedAt: reportedAt ? new Date(reportedAt) : new Date(),
       urgencyLevel,
       photo,
+      video,
       status: 'New'
     });
 
@@ -62,6 +66,11 @@ exports.createRequest = async (req, res) => {
       await pushNotifications.notifyNewRequest(savedRequest);
     } catch (err) {
       console.error('Unable to send push notifications:', err);
+    }
+    try {
+      await smsNotifications.notifyNewRequest(savedRequest);
+    } catch (err) {
+      console.error('Unable to send SMS notifications:', err);
     }
 
     res.status(201).json({ success: true, data: savedRequest });
@@ -75,13 +84,18 @@ exports.createRequest = async (req, res) => {
 exports.updateRequestStatus = async (req, res) => {
   try {
     const { status, assignedName, assignedMobile, remarks } = req.body;
-    const updateData = { status };
+    const updateData = {};
 
+    if (status) updateData.status = status;
     if (assignedName) updateData.assignedName = assignedName;
     if (assignedMobile) updateData.assignedMobile = assignedMobile;
     if (remarks) updateData.remarks = remarks;
-    if (req.file) {
-      updateData.completionPhoto = getUploadedPhotoUrl(req.file);
+    const files = req.files || {};
+    if (files.completionPhoto?.[0]) {
+      updateData.completionPhoto = getUploadedFileUrl(files.completionPhoto[0]);
+    }
+    if (files.completionVideo?.[0]) {
+      updateData.completionVideo = getUploadedFileUrl(files.completionVideo[0]);
     }
     if (status === 'Completed') {
       updateData.completedAt = new Date();
