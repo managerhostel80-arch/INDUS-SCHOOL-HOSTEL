@@ -814,11 +814,6 @@ function App() {
                       </a>
                     </div>
                   )}
-                  {req.progressPhoto && (
-                    <div style={{ margin: '8px 0' }}>
-                      {renderPhoto('Work in Progress Photo', req.progressPhoto, `Work in progress for ${req.requestId}`)}
-                    </div>
-                  )}
                   {req.status === 'Accepted' && (
                     <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
                   )}
@@ -919,7 +914,6 @@ function App() {
                 
                 <div className="completed-photo-grid" style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
                   {renderPhoto('Complaint Photo', req.photo, `Complaint photo for ${req.requestId}`)}
-                  {renderPhoto('Work in Progress Photo', req.progressPhoto, `Work in progress for ${req.requestId}`)}
                   {renderPhoto('Completed Photo', req.completionPhoto, `Completed work for ${req.requestId}`)}
                 </div>
                 <section aria-label={`Videos for ${req.requestId}`} style={{ marginTop: '12px' }}>
