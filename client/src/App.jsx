@@ -876,13 +876,13 @@ function App() {
                         accept="video/mp4,video/webm,video/quicktime"
                         onChange={e => {
                           const video = e.target.files?.[0];
-                          if (video && video.size > 3 * 1024 * 1024) {
+                          if (video && video.size > 20 * 1024 * 1024) {
                             e.target.value = '';
                             setCompletionData(previous => ({
                               ...previous,
                               [req._id]: { ...(previous[req._id] || {}), completionVideo: null }
                             }));
-                            window.alert('Completion video must be 3 MB or smaller.');
+                            window.alert('Completion video must be 20 MB or smaller.');
                             return;
                           }
 
@@ -893,7 +893,7 @@ function App() {
                         }}
                         style={{...inputStyle, margin: '4px 0'}}
                       />
-                      <p style={{ margin: '0 0 6px', color: '#666', fontSize: '11px' }}>Maximum video size: 3 MB.</p>
+                      <p style={{ margin: '0 0 6px', color: '#666', fontSize: '11px' }}>Maximum video size: 20 MB.</p>
                       {hasCompletionVideo && (
                         <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
                           Completion video attached: {completionData[req._id].completionVideo.name}
