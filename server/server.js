@@ -28,11 +28,28 @@ app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Indus Hostel Maintenance API' });
 });
 
-// API Routes
-app.use('/api/requests', requestRoutes);
-app.use('/api/team', teamRoutes);
-app.use('/api/db', dbRoutes); // Optional database management route
-app.use('/api/push', pushRoutes);
+// Safety helper to ensure Express always receives a valid middleware function
+const getRouter = (routeModule, name) => {
+  if (typeof routeModule === 'function') return routeModule;
+  if (routeModule && typeof routeModule.router === 'function') return routeModule.router;
+  throw new Error(`CRITICAL: Route module '${name}' did not export a valid router function. Check module.exports in that file.`);
+};
+
+// API Routes (Safely wrapped)
+app.use('/api/requests', getRouter(requestRoutes, 'requestRoutes'));
+app.use('/api/team', getRouter(teamRoutes, 'teamRoutes'));
+app.use('/api/db', getRouter(dbRoutes, 'dbRoutes'));
+app.use('/api/push', getRouter(pushRoutes, 'pushRoutes'));
+
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled server error:', err.stack);
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  res.status(500).json({ success: false, error: 'Internal server error' });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
