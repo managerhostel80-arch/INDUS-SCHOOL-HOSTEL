@@ -888,10 +888,7 @@ function App() {
                   )}
                   {renderVideo(req.video)}
                   {renderVideo(req.progressVideo, 'Work in Progress Video')}
-                  {req.status === 'Accepted' && (
-                    <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
-                  )}
-                  {req.status === 'In Progress' && (
+                  {['Accepted', 'In Progress'].includes(req.status) && (
                     <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
                       <label htmlFor={`progress-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
                         Upload work-in-progress video (optional):
@@ -926,6 +923,13 @@ function App() {
                       >
                         {uploadingProgressVideos[req._id] ? 'Uploading...' : 'Upload Work-in-Progress Video'}
                       </button>
+                    </div>
+                  )}
+                  {req.status === 'Accepted' && (
+                    <button onClick={() => updateStatus(req._id, 'In Progress')} style={{ width: '100%', padding: '6px', background: '#0dcaf0', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px', cursor: 'pointer' }}>Start</button>
+                  )}
+                  {req.status === 'In Progress' && (
+                    <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
                       <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
                         Upload completed work photo (Required to enable Mark Done):
                       </label>
