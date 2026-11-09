@@ -113,6 +113,12 @@ exports.updateRequestStatus = async (req, res) => {
       updateData.completionVideo = getUploadedFileUrl(files.completionVideo[0]);
     }
     if (status === 'Completed') {
+      if (!files.completionPhoto?.[0] || !files.completionVideo?.[0]) {
+        return res.status(400).json({
+          success: false,
+          error: 'A completion photo and video are required to mark this request as completed.'
+        });
+      }
       updateData.completedAt = new Date();
     }
 
