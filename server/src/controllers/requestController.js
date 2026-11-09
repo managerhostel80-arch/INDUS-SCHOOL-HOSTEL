@@ -94,6 +94,12 @@ exports.updateRequestStatus = async (req, res) => {
     if (assignedMobile) updateData.assignedMobile = assignedMobile;
     if (remarks) updateData.remarks = remarks;
     const files = req.files || {};
+    if (files.photo?.[0]) {
+      updateData.photo = getUploadedFileUrl(files.photo[0]);
+    }
+    if (files.video?.[0]) {
+      updateData.video = getUploadedFileUrl(files.video[0]);
+    }
     if (files.completionPhoto?.[0]) {
       updateData.completionPhoto = getUploadedFileUrl(files.completionPhoto[0]);
     }
