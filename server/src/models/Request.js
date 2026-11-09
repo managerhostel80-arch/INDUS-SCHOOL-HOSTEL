@@ -17,7 +17,9 @@ const maintenanceRequestSchema = new mongoose.Schema({
   assignedMobile: { type: String, default: '' },
   status: { type: String, enum: ['New', 'Accepted', 'In Progress', 'Completed'], default: 'New' },
   photo: { type: String, default: '' },
+  video: { type: String, default: '' },
   completionPhoto: { type: String, default: '' },
+  completionVideo: { type: String, default: '' },
   remarks: { type: String, default: '' },
   completedAt: { type: Date }
 }, { timestamps: true });
