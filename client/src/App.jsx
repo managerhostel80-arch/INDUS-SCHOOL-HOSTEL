@@ -101,7 +101,6 @@ function App() {
   });
 
   const [completionData, setCompletionData] = useState({});
-  const [uploadingProgressPhoto, setUploadingProgressPhoto] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
@@ -276,9 +275,13 @@ function App() {
         window.alert('Please upload a photo of the completed work before marking this complaint as done.');
         return;
       }
+      if (!itemComp.completionVideo) {
+        window.alert('Please upload a video of the completed work before marking this complaint as done.');
+        return;
+      }
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
       data.append('completionPhoto', itemComp.completionPhoto);
-      if (itemComp.completionVideo) data.append('completionVideo', itemComp.completionVideo);
+      data.append('completionVideo', itemComp.completionVideo);
     }
 
     try {
@@ -295,31 +298,6 @@ function App() {
       await fetchData();
     } catch (err) {
       console.error('Update status error:', err);
-    }
-  };
-
-  const uploadProgressPhoto = async (id, photo) => {
-    const data = new FormData();
-    data.append('progressPhoto', photo);
-    setUploadingProgressPhoto(previous => ({ ...previous, [id]: true }));
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
-        method: 'PATCH',
-        body: data
-      });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        window.alert(result.error || 'Could not upload the work-in-progress photo.');
-        return;
-      }
-
-      await fetchData();
-    } catch (err) {
-      console.error('Work-in-progress photo upload error:', err);
-      window.alert(err.message || 'Could not upload the work-in-progress photo.');
-    } finally {
-      setUploadingProgressPhoto(previous => ({ ...previous, [id]: false }));
     }
   };
 
@@ -846,28 +824,8 @@ function App() {
                   )}
                   {req.status === 'In Progress' && (
                     <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                      <label htmlFor={`progress-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload work-in-progress photo:
-                      </label>
-                      <input
-                        id={`progress-photo-${req._id}`}
-                        type="file"
-                        accept="image/*"
-                        disabled={Boolean(uploadingProgressPhoto[req._id])}
-                        onChange={e => {
-                          const photo = e.target.files?.[0];
-                          e.target.value = '';
-                          if (photo) uploadProgressPhoto(req._id, photo);
-                        }}
-                        style={{...inputStyle, margin: '4px 0'}}
-                      />
-                      {uploadingProgressPhoto[req._id] && (
-                        <p role="status" style={{ margin: '2px 0 6px', color: '#084298', fontSize: '11px' }}>
-                          Uploading work-in-progress photo...
-                        </p>
-                      )}
                       <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload completed work photo (Required to enable Mark Done):
+                        Upload completed work photo (Required):
                       </label>
                       <input
                         id={`completion-photo-${req._id}`}
@@ -882,7 +840,7 @@ function App() {
                         </p>
                       )}
                       <label htmlFor={`completion-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload completion video (Optional):
+                        Upload completion video (Required):
                       </label>
                       <input
                         id={`completion-video-${req._id}`}
@@ -902,20 +860,20 @@ function App() {
                       <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                       <button
                         onClick={() => updateStatus(req._id, 'Completed', true)}
-                        disabled={!hasCompletedPhoto}
+                        disabled={!hasCompletedPhoto || !hasCompletionVideo}
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: hasCompletedPhoto ? '#198754' : '#6c757d',
+                          background: hasCompletedPhoto && hasCompletionVideo ? '#198754' : '#6c757d',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           fontWeight: 'bold',
-                          cursor: hasCompletedPhoto ? 'pointer' : 'not-allowed',
-                          opacity: hasCompletedPhoto ? 1 : 0.65
+                          cursor: hasCompletedPhoto && hasCompletionVideo ? 'pointer' : 'not-allowed',
+                          opacity: hasCompletedPhoto && hasCompletionVideo ? 1 : 0.65
                         }}
                       >
-                        {hasCompletedPhoto ? 'Mark Done' : 'Upload Completed Photo to Enable'}
+                        {hasCompletedPhoto && hasCompletionVideo ? 'Mark Done' : 'Upload Photo and Video to Enable'}
                       </button>
                     </div>
                   )}
