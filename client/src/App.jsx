@@ -101,7 +101,7 @@ function App() {
     reportedByMobile: '',
     reportedAt: '',
     urgencyLevel: 'Medium',
-    video: null
+    photo: null
   });
 
   const [completionData, setCompletionData] = useState({});
@@ -286,7 +286,7 @@ function App() {
     e.preventDefault();
     if (isSubmittingReport) return;
 
-    const { video, ...reportFields } = formData;
+    const { photo, ...reportFields } = formData;
     const data = new FormData();
     Object.keys(reportFields).forEach(key => {
       if (reportFields[key]) data.append(key, reportFields[key]);
@@ -321,9 +321,9 @@ function App() {
 
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
-      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', video: null });
-      const attachments = { video };
-      if (video) {
+      setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
+      const attachments = { photo };
+      if (photo) {
         setPendingReportAttachments({ requestId: result.data._id, attachments });
         uploadReportAttachments(result.data._id, attachments);
       } else {
@@ -815,19 +815,19 @@ function App() {
                 <textarea value={formData.problemDescription} onChange={e => setFormData({...formData, problemDescription: e.target.value})} required style={{...inputStyle, height: '50px'}} />
               </div>
               <div>
-                <label style={{ fontWeight: 'bold' }}>Video (optional, max 20 MB)</label>
+                <label style={{ fontWeight: 'bold' }}>Photo (optional, max 20 MB)</label>
                 <input
                   type="file"
-                  accept="video/mp4,video/webm,video/quicktime"
+                  accept="image/*"
                   onChange={e => {
-                    const video = e.target.files[0];
-                    if (video && video.size > 20 * 1024 * 1024) {
-                      window.alert('Please choose a video smaller than 20 MB.');
+                    const photo = e.target.files[0];
+                    if (photo && photo.size > 20 * 1024 * 1024) {
+                      window.alert('Please choose a photo smaller than 20 MB.');
                       e.target.value = '';
-                      setFormData({ ...formData, video: null });
+                      setFormData({ ...formData, photo: null });
                       return;
                     }
-                    setFormData({ ...formData, video: video || null });
+                    setFormData({ ...formData, photo: photo || null });
                   }}
                   style={inputStyle}
                 />
