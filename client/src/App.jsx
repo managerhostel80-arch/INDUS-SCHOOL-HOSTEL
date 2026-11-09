@@ -293,9 +293,18 @@ function App() {
         method: 'PATCH',
         body: data
       });
-      const result = await res.json().catch(() => null);
+      const responseBody = await res.text();
+      let result = null;
+      try {
+        result = responseBody ? JSON.parse(responseBody) : null;
+      } catch {
+        // Keep the response text available for useful server/proxy error feedback.
+      }
       if (!res.ok || !result?.success) {
-        window.alert(result?.error || `Could not update the request (HTTP ${res.status}). Check the server deployment and try again.`);
+        const responseDetails = result?.error || responseBody.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+        window.alert(responseDetails
+          ? `Could not update the request (HTTP ${res.status}): ${responseDetails}`
+          : `Could not update the request (HTTP ${res.status}). Check the server deployment and try again.`);
         return;
       }
 
