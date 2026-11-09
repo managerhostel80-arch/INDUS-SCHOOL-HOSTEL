@@ -101,6 +101,7 @@ function App() {
   });
 
   const [completionData, setCompletionData] = useState({});
+  const [updatingRequests, setUpdatingRequests] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
   const [pushStatus, setPushStatus] = useState('');
@@ -249,7 +250,7 @@ function App() {
         body: data
       });
       const result = await res.json();
-      if (!res.ok || !result.success) {
+      if (!res.ok || !result?.success) {
         window.alert(result.error || 'Could not submit the complaint.');
         return;
       }
@@ -264,6 +265,8 @@ function App() {
   };
 
   const updateStatus = async (id, status, isCompletion = false, assignedName = null, assignedMobile = null) => {
+    if (updatingRequests[id]) return;
+
     const data = new FormData();
     data.append('status', status);
     if (assignedName) data.append('assignedName', assignedName);
@@ -284,20 +287,41 @@ function App() {
       data.append('completionVideo', itemComp.completionVideo);
     }
 
+    setUpdatingRequests(previous => ({ ...previous, [id]: true }));
     try {
       const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: 'PATCH',
         body: data
       });
-      const result = await res.json();
-      if (!res.ok || !result.success) {
-        window.alert(result.error || 'Could not update the request.');
+      const result = await res.json().catch(() => null);
+      if (!res.ok || !result?.success) {
+        window.alert(result?.error || `Could not update the request (HTTP ${res.status}). Check the server deployment and try again.`);
+        return;
+      }
+
+      if (isCompletion && (
+        result.data?.status !== 'Completed' ||
+        !result.data?.completionPhoto ||
+        !result.data?.completionVideo
+      )) {
+        window.alert('The server did not confirm that the completion photo and video were saved. The request was not marked as completed.');
         return;
       }
 
       await fetchData();
+      if (isCompletion) {
+        setCompletionData(previous => {
+          const next = { ...previous };
+          delete next[id];
+          return next;
+        });
+        window.alert('Completed. The photo and video were saved successfully.');
+      }
     } catch (err) {
       console.error('Update status error:', err);
+      window.alert(err.message || 'Could not reach the server. The request and its media were not confirmed as saved.');
+    } finally {
+      setUpdatingRequests(previous => ({ ...previous, [id]: false }));
     }
   };
 
@@ -841,12 +865,26 @@ function App() {
                         id={`completion-video-${req._id}`}
                         type="file"
                         accept="video/mp4,video/webm,video/quicktime"
-                        onChange={e => setCompletionData({
-                          ...completionData,
-                          [req._id]: { ...(completionData[req._id] || {}), completionVideo: e.target.files?.[0] || null }
-                        })}
+                        onChange={e => {
+                          const video = e.target.files?.[0];
+                          if (video && video.size > 3 * 1024 * 1024) {
+                            e.target.value = '';
+                            setCompletionData(previous => ({
+                              ...previous,
+                              [req._id]: { ...(previous[req._id] || {}), completionVideo: null }
+                            }));
+                            window.alert('Completion video must be 3 MB or smaller.');
+                            return;
+                          }
+
+                          setCompletionData(previous => ({
+                            ...previous,
+                            [req._id]: { ...(previous[req._id] || {}), completionVideo: video || null }
+                          }));
+                        }}
                         style={{...inputStyle, margin: '4px 0'}}
                       />
+                      <p style={{ margin: '0 0 6px', color: '#666', fontSize: '11px' }}>Maximum video size: 3 MB.</p>
                       {hasCompletionVideo && (
                         <p style={{ margin: '2px 0 6px', color: '#198754', fontSize: '11px', fontWeight: 'bold' }}>
                           Completion video attached: {completionData[req._id].completionVideo.name}
@@ -855,20 +893,24 @@ function App() {
                       <input type="text" placeholder="Remarks" onChange={e => setCompletionData({...completionData, [req._id]: { ...(completionData[req._id] || {}), remarks: e.target.value }})} style={{...inputStyle, marginBottom: '6px'}} />
                       <button
                         onClick={() => updateStatus(req._id, 'Completed', true)}
-                        disabled={!hasCompletedPhoto || !hasCompletionVideo}
+                        disabled={!hasCompletedPhoto || !hasCompletionVideo || Boolean(updatingRequests[req._id])}
                         style={{
                           width: '100%',
                           padding: '8px',
-                          background: hasCompletedPhoto && hasCompletionVideo ? '#198754' : '#6c757d',
+                          background: hasCompletedPhoto && hasCompletionVideo && !updatingRequests[req._id] ? '#198754' : '#6c757d',
                           color: 'white',
                           border: 'none',
                           borderRadius: '4px',
                           fontWeight: 'bold',
-                          cursor: hasCompletedPhoto && hasCompletionVideo ? 'pointer' : 'not-allowed',
-                          opacity: hasCompletedPhoto && hasCompletionVideo ? 1 : 0.65
+                          cursor: hasCompletedPhoto && hasCompletionVideo && !updatingRequests[req._id] ? 'pointer' : 'not-allowed',
+                          opacity: hasCompletedPhoto && hasCompletionVideo && !updatingRequests[req._id] ? 1 : 0.65
                         }}
                       >
-                        {hasCompletedPhoto && hasCompletionVideo ? 'Mark Done' : 'Upload Photo and Video to Enable'}
+                        {updatingRequests[req._id]
+                          ? 'Saving photo, video, and completion...'
+                          : hasCompletedPhoto && hasCompletionVideo
+                            ? 'Mark Done'
+                            : 'Upload Photo and Video to Enable'}
                       </button>
                     </div>
                   )}
