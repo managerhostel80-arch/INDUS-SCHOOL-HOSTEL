@@ -10,17 +10,7 @@ const cloudinaryConfig = {
   api_secret: process.env.CLOUDINARY_API_SECRET
 };
 const hasCloudinaryConfig = Object.values(cloudinaryConfig).every(Boolean);
-
-const requirePersistentPhotoStorage = (req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !hasCloudinaryConfig) {
-    return res.status(503).json({
-      success: false,
-      error: 'Photo uploads are unavailable until Cloudinary is configured.'
-    });
-  }
-
-  next();
-};
+const persistentStorageError = 'Media uploads are unavailable until Cloudinary is configured.';
 
 let storage;
 if (hasCloudinaryConfig) {
@@ -53,6 +43,10 @@ if (hasCloudinaryConfig) {
 }
 
 const fileFilter = (req, file, cb) => {
+  if (process.env.NODE_ENV === 'production' && !hasCloudinaryConfig) {
+    return cb(new Error(persistentStorageError), false);
+  }
+
   const isImage = file.mimetype.startsWith('image/');
   const isSupportedVideo = ['video', 'progressVideo', 'completionVideo'].includes(file.fieldname) &&
     ['video/mp4', 'video/webm', 'video/quicktime'].includes(file.mimetype);
@@ -98,6 +92,10 @@ const handleMediaUpload = (fields) => (req, res, next) => {
       return res.status(400).json({ success: false, error });
     }
 
+    if (err.message === persistentStorageError) {
+      return res.status(503).json({ success: false, error: err.message });
+    }
+
     if (err.message === 'Upload an image or an MP4, WebM, or MOV video.') {
       return res.status(400).json({ success: false, error: err.message });
     }
@@ -106,4 +104,4 @@ const handleMediaUpload = (fields) => (req, res, next) => {
   });
 };
 
-module.exports = { requestMediaUpload, completionMediaUpload, requirePersistentPhotoStorage };
+module.exports = { requestMediaUpload, completionMediaUpload };
