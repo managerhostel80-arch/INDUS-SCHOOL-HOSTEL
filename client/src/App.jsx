@@ -89,6 +89,9 @@ function App() {
   const [completedFilterCategory, setCompletedFilterCategory] = useState('All'); // Specific filter for completed tab
   const [submittedRequest, setSubmittedRequest] = useState(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState(false);
+  const [pendingReportAttachments, setPendingReportAttachments] = useState(null);
+  const [isUploadingReportAttachments, setIsUploadingReportAttachments] = useState(false);
+  const [reportAttachmentStatus, setReportAttachmentStatus] = useState('');
 
   const [formData, setFormData] = useState({
     category: 'Electrical',
@@ -242,13 +245,55 @@ function App() {
     }
   };
 
+  const uploadReportAttachments = async (requestId, attachments) => {
+    const data = new FormData();
+    if (attachments.photo) data.append('photo', attachments.photo);
+    if (attachments.video) data.append('video', attachments.video);
+
+    setIsUploadingReportAttachments(true);
+    setReportAttachmentStatus('Uploading complaint attachments...');
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/requests/${requestId}`, {
+        method: 'PATCH',
+        body: data
+      });
+      const responseBody = await res.text();
+      let result;
+      try {
+        result = JSON.parse(responseBody);
+      } catch (parseError) {
+        console.error('Complaint attachments returned a non-JSON response:', {
+          status: res.status,
+          contentType: res.headers.get('content-type'),
+          bodyPreview: responseBody.slice(0, 200),
+          parseError
+        });
+        throw new Error(`The server returned an unexpected response (HTTP ${res.status}).`);
+      }
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || 'The server could not save the attachments.');
+      }
+
+      setPendingReportAttachments(null);
+      setReportAttachmentStatus('Complaint attachments uploaded successfully.');
+      fetchData();
+    } catch (err) {
+      console.error('Complaint attachment upload error:', err);
+      setReportAttachmentStatus(`The complaint was submitted, but its attachments could not be uploaded: ${err.message || 'Please try again.'}`);
+    } finally {
+      setIsUploadingReportAttachments(false);
+    }
+  };
+
   const handleReportSubmit = async (e) => {
     e.preventDefault();
     if (isSubmittingReport) return;
 
+    const { photo, video, ...reportFields } = formData;
     const data = new FormData();
-    Object.keys(formData).forEach(key => {
-      if (formData[key]) data.append(key, formData[key]);
+    Object.keys(reportFields).forEach(key => {
+      if (reportFields[key]) data.append(key, reportFields[key]);
     });
 
     setIsSubmittingReport(true);
@@ -257,7 +302,22 @@ function App() {
         method: 'POST',
         body: data
       });
-      const result = await res.json();
+      const responseBody = await res.text();
+      let result;
+      try {
+        result = JSON.parse(responseBody);
+      } catch (parseError) {
+        console.error('Report submission returned a non-JSON response:', {
+          status: res.status,
+          contentType: res.headers.get('content-type'),
+          bodyPreview: responseBody.slice(0, 200),
+          parseError
+        });
+        throw new Error(
+          `The complaint server returned an unexpected response (HTTP ${res.status}). Please try again; if the problem continues, contact the administrator.`
+        );
+      }
+
       if (!res.ok || !result.success) {
         window.alert(result.error || 'Could not submit the complaint.');
         return;
@@ -266,6 +326,14 @@ function App() {
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
       setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null, video: null });
+      const attachments = { photo, video };
+      if (photo || video) {
+        setPendingReportAttachments({ requestId: result.data._id, attachments });
+        uploadReportAttachments(result.data._id, attachments);
+      } else {
+        setPendingReportAttachments(null);
+        setReportAttachmentStatus('');
+      }
       fetchData();
     } catch (err) {
       console.error('Submission error:', err);
@@ -761,7 +829,21 @@ function App() {
               </div>
               <div>
                 <label style={{ fontWeight: 'bold' }}>Photo</label>
-                <input type="file" accept="image/*" onChange={e => setFormData({...formData, photo: e.target.files[0]})} style={inputStyle} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const photo = e.target.files[0];
+                    if (photo && photo.size > 20 * 1024 * 1024) {
+                      window.alert('Please choose a photo smaller than 20 MB.');
+                      e.target.value = '';
+                      setFormData({ ...formData, photo: null });
+                      return;
+                    }
+                    setFormData({ ...formData, photo: photo || null });
+                  }}
+                  style={inputStyle}
+                />
               </div>
               <div>
                 <label style={{ fontWeight: 'bold' }}>Video (optional, max 20 MB)</label>
@@ -1086,6 +1168,23 @@ function App() {
         {activeTab === 'success-screen' && (
           <div style={{ background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid #ddd' }}>
             <h3 style={{ color: '#198754', margin: '0 0 10px 0', fontSize: '16px' }}>Successfully Submitted!</h3>
+            {submittedRequest?.requestId && (
+              <p style={{ margin: '0 0 8px', fontSize: '12px' }}>Complaint ID: <b>{submittedRequest.requestId}</b></p>
+            )}
+            {reportAttachmentStatus && (
+              <p role="status" style={{ margin: '0 0 10px', color: isUploadingReportAttachments ? '#084298' : pendingReportAttachments ? '#b02a37' : '#198754', fontSize: '12px' }}>
+                {reportAttachmentStatus}
+              </p>
+            )}
+            {pendingReportAttachments && !isUploadingReportAttachments && (
+              <button
+                type="button"
+                onClick={() => uploadReportAttachments(pendingReportAttachments.requestId, pendingReportAttachments.attachments)}
+                style={{ width: '100%', padding: '10px', background: '#fd7e14', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginBottom: '8px' }}
+              >
+                Retry Attachment Upload
+              </button>
+            )}
             <button onClick={() => setActiveTab(userRole === 'admin' ? 'admin-dashboard' : 'report')} style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Continue</button>
           </div>
         )}
