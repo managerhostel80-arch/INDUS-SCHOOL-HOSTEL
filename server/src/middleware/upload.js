@@ -54,7 +54,7 @@ if (hasCloudinaryConfig) {
 
 const fileFilter = (req, file, cb) => {
   const isImage = file.mimetype.startsWith('image/');
-  const isSupportedVideo = ['video', 'completionVideo'].includes(file.fieldname) &&
+  const isSupportedVideo = ['video', 'progressVideo', 'completionVideo'].includes(file.fieldname) &&
     ['video/mp4', 'video/webm', 'video/quicktime'].includes(file.mimetype);
 
   if (isImage || isSupportedVideo) {
@@ -80,6 +80,7 @@ const requestMediaUpload = (req, res, next) => {
 const completionMediaUpload = (req, res, next) => {
   handleMediaUpload([
     { name: 'completionPhoto', maxCount: 1 },
+    { name: 'progressVideo', maxCount: 1 },
     { name: 'completionVideo', maxCount: 1 }
   ])(req, res, next);
 };
