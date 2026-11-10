@@ -49,7 +49,7 @@ body {
 
 .app-header-content {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 70px;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
   align-items: center;
   gap: 8px;
 }
@@ -65,7 +65,6 @@ body {
 
 .app-header-side-right {
   justify-content: flex-end;
-  gap: 4px;
 }
 
 .app-header-logo {
@@ -96,31 +95,13 @@ body {
   line-height: 1.2;
 }
 
-.app-header-notifications {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.app-header-notifications > span:first-child {
-  font-size: 18px !important;
-}
-
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   padding: 0;
   flex: 1;
-  grid-template-rows: repeat(4, minmax(76px, 1fr));
+  grid-template-rows: repeat(4, minmax(86px, 1fr));
 }
 
 .dashboard-topbar {
@@ -145,15 +126,15 @@ body {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  min-height: 76px;
-  padding: 9px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  min-height: 86px;
+  padding: 10px;
+  border: 1px solid var(--card-border, rgba(15, 23, 42, 0.1));
   border-radius: 9px;
   color: #1e293b;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  transition: transform 0.15s ease, filter 0.15s ease;
+  box-shadow: 0 3px 9px rgba(15, 23, 42, 0.12);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
   width: 100%;
   text-align: left;
 }
@@ -161,57 +142,64 @@ body {
 .dashboard-card-content {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .dashboard-card-blue {
   --card-accent: #2563eb;
-  background: #e8efff;
+  --card-border: #b6ccff;
+  background: linear-gradient(120deg, #dce8ff, #f1f5ff);
 }
 
 .dashboard-card-green {
   --card-accent: #16a34a;
-  background: #e9f8ee;
+  --card-border: #a9e3bb;
+  background: linear-gradient(120deg, #d9f5e2, #effbf3);
 }
 
 .dashboard-card-amber {
   --card-accent: #d97706;
-  background: #fff5dc;
+  --card-border: #f2d18a;
+  background: linear-gradient(120deg, #ffedc2, #fff8e8);
 }
 
 .dashboard-card-purple {
   --card-accent: #7c3aed;
-  background: #f1eaff;
+  --card-border: #d0b8ff;
+  background: linear-gradient(120deg, #e9ddff, #f7f2ff);
 }
 
 .dashboard-card-cyan {
   --card-accent: #0284c7;
-  background: #e6f6fd;
+  --card-border: #a9ddf2;
+  background: linear-gradient(120deg, #d9f2ff, #effaff);
 }
 
 .dashboard-card-slate {
   --card-accent: #475569;
-  background: #edf0f4;
+  --card-border: #c4cbd5;
+  background: linear-gradient(120deg, #e1e6ed, #f4f6f9);
 }
 
 .dashboard-card-full {
   grid-column: span 2;
-  min-height: 52px;
-  padding: 7px 10px;
+  min-height: 60px;
+  padding: 8px 11px;
 }
 
 .dashboard-card:hover {
   transform: translateY(-2px);
-  filter: brightness(1.05);
+  filter: saturate(1.08);
+  box-shadow: 0 5px 12px rgba(15, 23, 42, 0.16);
 }
 
 .dashboard-card-icon {
-  font-size: 22px;
+  font-size: 26px;
   background: var(--card-accent, #2563eb);
   color: #fff;
-  width: 42px;
-  height: 42px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,14 +213,14 @@ body {
 
 .dashboard-card-arrow {
   flex: 0 0 auto;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: bold;
   color: var(--card-accent, #2563eb);
 }
 
 .dashboard-card-title {
   color: #1e293b;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: bold;
   line-height: 1.15;
   margin: 0 0 2px;
@@ -240,7 +228,7 @@ body {
 
 .dashboard-card-subtitle {
   color: #526174;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.15;
   opacity: 0.9;
   margin: 0;
@@ -410,7 +398,7 @@ body {
   }
 
   .app-header-content {
-    grid-template-columns: 38px minmax(0, 1fr) 62px;
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
     gap: 5px;
   }
 
@@ -422,31 +410,23 @@ body {
     font-size: 6px;
   }
 
-  .app-header-side-right {
-    gap: 2px;
-  }
-
-  .app-header-notifications {
-    width: 22px;
-  }
-
   .dashboard-card {
-    min-height: 68px;
+    min-height: 76px;
     padding: 6px;
   }
 
   .dashboard-card-icon {
-    width: 34px;
-    height: 34px;
-    font-size: 18px;
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
   }
 
   .dashboard-card-title {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .dashboard-card-subtitle {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .quick-stat-label {
@@ -461,17 +441,17 @@ body {
 
   .dashboard-grid {
     flex: 0 0 auto;
-    grid-template-rows: repeat(4, minmax(68px, auto));
+    grid-template-rows: repeat(4, minmax(76px, auto));
     gap: 4px;
   }
 
   .dashboard-card {
-    min-height: 68px;
+    min-height: 76px;
     padding: 6px;
   }
 
   .dashboard-card-full {
-    min-height: 46px;
+    min-height: 54px;
   }
 
   .dashboard-quick-stats {
