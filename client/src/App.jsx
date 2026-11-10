@@ -267,10 +267,11 @@ function App() {
   const updateStatus = async (id, status, isCompletion = false, assignedName = null, assignedMobile = null) => {
     if (updatingRequests[id]) return;
 
-    const data = new FormData();
-    data.append('status', status);
-    if (assignedName) data.append('assignedName', assignedName);
-    if (assignedMobile) data.append('assignedMobile', assignedMobile);
+    const data = isCompletion ? new FormData() : {
+      status,
+      ...(assignedName ? { assignedName } : {}),
+      ...(assignedMobile ? { assignedMobile } : {})
+    };
 
     if (isCompletion) {
       const itemComp = completionData[id] || {};
@@ -282,6 +283,7 @@ function App() {
         window.alert('Please upload a video of the completed work before marking this complaint as done.');
         return;
       }
+      data.append('status', status);
       if (itemComp.remarks) data.append('remarks', itemComp.remarks);
       data.append('completionPhoto', itemComp.completionPhoto);
       data.append('completionVideo', itemComp.completionVideo);
@@ -291,7 +293,8 @@ function App() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
         method: 'PATCH',
-        body: data
+        headers: isCompletion ? undefined : { 'Content-Type': 'application/json' },
+        body: isCompletion ? data : JSON.stringify(data)
       });
       const responseBody = await res.text();
       let result = null;
@@ -1038,4 +1041,4 @@ const loginInputStyle = {
   fontSize: '16px'
 };
 
-export default App;
+export default App;                                                                                                                
