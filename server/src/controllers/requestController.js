@@ -1,6 +1,12 @@
 const MaintenanceRequest = require('../models/Request');
 const pushNotifications = require('../services/pushNotifications');
-const smsNotifications = require('../services/smsNotifications');
+let smsNotifications;
+try {
+  smsNotifications = require('../services/smsNotifications');
+} catch (error) {
+  if (error.code !== 'MODULE_NOT_FOUND') throw error;
+  console.error('SMS notification service is unavailable; continuing without SMS alerts:', error.message);
+}
 
 const getUploadedFileUrl = (file) => (
   file?.path?.startsWith('http') ? file.path : file ? `/uploads/${file.filename}` : ''
@@ -63,14 +69,20 @@ exports.createRequest = async (req, res) => {
 
     const savedRequest = await newRequest.save();
     setImmediate(async () => {
+      const notifications = [
+        ['push', () => pushNotifications.notifyNewRequest(savedRequest)]
+      ];
+      if (smsNotifications) {
+        notifications.push(['SMS', () => smsNotifications.notifyNewRequest(savedRequest)]);
+      }
+
       const notificationResults = await Promise.allSettled([
-        pushNotifications.notifyNewRequest(savedRequest),
-        smsNotifications.notifyNewRequest(savedRequest)
+        ...notifications.map(([, notify]) => notify())
       ]);
 
       notificationResults.forEach((result, index) => {
         if (result.status === 'rejected') {
-          const notificationType = index === 0 ? 'push' : 'SMS';
+          const [notificationType] = notifications[index];
           console.error(`Unable to send ${notificationType} notifications:`, result.reason);
         }
       });
