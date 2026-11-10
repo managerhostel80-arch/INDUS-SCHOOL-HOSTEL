@@ -291,8 +291,11 @@ function App() {
 
     setUpdatingRequests(previous => ({ ...previous, [id]: true }));
     try {
-      const res = await fetch(`${API_BASE_URL}/api/requests/${id}`, {
-        method: 'PATCH',
+      const requestUrl = isCompletion
+        ? `${API_BASE_URL}/api/requests/${id}/completion`
+        : `${API_BASE_URL}/api/requests/${id}`;
+      const res = await fetch(requestUrl, {
+        method: isCompletion ? 'POST' : 'PATCH',
         headers: isCompletion ? undefined : { 'Content-Type': 'application/json' },
         body: isCompletion ? data : JSON.stringify(data)
       });
