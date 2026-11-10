@@ -110,6 +110,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState('');
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraError, setCameraError] = useState('');
+  const [cameraFacingMode, setCameraFacingMode] = useState('environment');
   const cameraVideoRef = useRef(null);
 
   useEffect(() => {
@@ -284,7 +285,7 @@ function App() {
     }
   };
 
-  const startReportCamera = async () => {
+  const startReportCamera = async (facingMode = cameraFacingMode) => {
     setCameraError('');
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError('Camera capture is not supported here. Use Choose Photo to select an image instead.');
@@ -294,8 +295,9 @@ function App() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
-        video: { facingMode: { ideal: 'environment' } }
+        video: { facingMode: { ideal: facingMode } }
       });
+      setCameraFacingMode(facingMode);
       setCameraStream(stream);
     } catch (error) {
       console.error('Unable to access camera:', error);
@@ -303,6 +305,15 @@ function App() {
         ? 'Camera access was denied. Allow camera access in your browser settings and try again.'
         : 'Could not open the camera. Check that it is available and try again.');
     }
+  };
+
+  const switchReportCamera = async (facingMode) => {
+    if (facingMode === cameraFacingMode) return;
+
+    cameraStream?.getTracks().forEach(track => track.stop());
+    setCameraStream(null);
+    setCameraFacingMode(facingMode);
+    await startReportCamera(facingMode);
   };
 
   const captureReportPhoto = () => {
@@ -887,6 +898,24 @@ function App() {
                   style={{ width: '100%', maxWidth: '640px', maxHeight: '70vh', objectFit: 'contain', background: '#111', borderRadius: '8px' }}
                 />
                 {cameraError && <p role="alert" style={{ color: 'white', textAlign: 'center' }}>{cameraError}</p>}
+                <div role="group" aria-label="Choose camera" style={{ display: 'flex', gap: '8px', marginTop: '12px', width: '100%', maxWidth: '640px' }}>
+                  <button
+                    type="button"
+                    aria-pressed={cameraFacingMode === 'environment'}
+                    onClick={() => switchReportCamera('environment')}
+                    style={{ flex: 1, padding: '9px', background: cameraFacingMode === 'environment' ? '#0d6efd' : '#495057', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Back Camera
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={cameraFacingMode === 'user'}
+                    onClick={() => switchReportCamera('user')}
+                    style={{ flex: 1, padding: '9px', background: cameraFacingMode === 'user' ? '#0d6efd' : '#495057', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Front Camera
+                  </button>
+                </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '14px', width: '100%', maxWidth: '640px' }}>
                   <button
                     type="button"
