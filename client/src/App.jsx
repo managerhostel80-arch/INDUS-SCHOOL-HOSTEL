@@ -495,13 +495,12 @@ function App() {
     <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Top Header Matching Reference Design */}
-      <header className="app-header" style={{ background: '#0d6efd', color: 'white', padding: '14px 12px', width: '100%', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '10px', fontSize: '20px' }}>🏫</div>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '15px', fontWeight: 'bold', lineHeight: '1.2' }}>Montessori Indus<br />Residential School</h2>
-            </div>
+      <header className="app-header">
+        <div className="app-header-content">
+          <img className="app-header-logo" src="/school-logo-left.png" alt="Montessori Indus School logo" />
+          <div className="app-header-copy">
+            <h2>Montessori Indus<br />Residential School</h2>
+            <p>Hostel 360 – Maintenance Management System</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ position: 'relative', cursor: 'pointer' }} onClick={handleEnableNotifications}>
@@ -511,20 +510,17 @@ function App() {
             <span style={{ fontSize: '20px', cursor: 'pointer' }}>⋮</span>
           </div>
         </div>
-        <p style={{ margin: '8px 0 0 0', fontSize: '11px', opacity: 0.95, textAlign: 'center', fontWeight: 'bold' }}>
-          Hostel 360 – Maintenance Management System
-        </p>
       </header>
 
       {/* Main Content Body */}
-      <div className="app-main" style={{ padding: '12px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      <div className="app-main" style={{ padding: '8px', width: '100%', maxWidth: '600px', boxSizing: 'border-box' }}>
         
         {/* ADMIN DASHBOARD HUB */}
         {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
             
             {/* Top Bar Info (Admin Panel & Live IST Clock) */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '0 2px', fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>
+            <div className="dashboard-topbar">
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>👤</span> Admin Panel
               </div>
@@ -540,82 +536,82 @@ function App() {
               
               {/* Overview / Dashboard */}
               <button onClick={() => setActiveTab('dashboard')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
-                <div className="dashboard-card-top">
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">📊</div>
-                  <div className="dashboard-card-arrow">›</div>
+                  <div className="dashboard-card-copy">
+                    <h4 className="dashboard-card-title">Overview</h4>
+                    <p className="dashboard-card-subtitle">Dashboard</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="dashboard-card-title">Overview</h4>
-                  <p className="dashboard-card-subtitle">Dashboard</p>
-                </div>
+                <div className="dashboard-card-arrow">›</div>
               </button>
 
               {/* Report a Problem */}
               <button onClick={() => setActiveTab('report')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
-                <div className="dashboard-card-top">
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">➕</div>
-                  <div className="dashboard-card-arrow">›</div>
+                  <div className="dashboard-card-copy">
+                    <h4 className="dashboard-card-title">Report a Problem</h4>
+                    <p className="dashboard-card-subtitle">New Complaint</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="dashboard-card-title">Report a Problem</h4>
-                  <p className="dashboard-card-subtitle">New Complaint</p>
-                </div>
+                <div className="dashboard-card-arrow">›</div>
               </button>
 
               {/* New Complaints */}
               <button onClick={() => setActiveTab('new-complaint-view')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-                <div className="dashboard-card-top">
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">📥</div>
-                  <div className="dashboard-card-arrow">›</div>
+                  <div className="dashboard-card-copy">
+                    <h4 className="dashboard-card-title">New Complaints</h4>
+                    <p className="dashboard-card-subtitle">Awaiting Action</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="dashboard-card-title">New Complaints</h4>
-                  <p className="dashboard-card-subtitle">Awaiting Action</p>
-                </div>
+                <div className="dashboard-card-arrow">›</div>
                 {stats.new > 0 && <span className="dashboard-badge">{stats.new}</span>}
               </button>
 
               {/* Work in Progress */}
               <button onClick={() => setActiveTab('electrician-in-progress')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
-                <div className="dashboard-card-top">
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">🔧</div>
-                  <div className="dashboard-card-arrow">›</div>
+                  <div className="dashboard-card-copy">
+                    <h4 className="dashboard-card-title">Work in Progress</h4>
+                    <p className="dashboard-card-subtitle">Active Work</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="dashboard-card-title">Work in Progress</h4>
-                  <p className="dashboard-card-subtitle">Active Work</p>
-                </div>
+                <div className="dashboard-card-arrow">›</div>
               </button>
 
               {/* Completed */}
-              <button onClick={() => setActiveTab('completed-status')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #0d9488, #0f766e)' }}>
-                <div className="dashboard-card-top">
+              <button onClick={() => setActiveTab('completed-status')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">✅</div>
-                  <div className="dashboard-card-arrow">›</div>
+                  <div className="dashboard-card-copy">
+                    <h4 className="dashboard-card-title">Completed</h4>
+                    <p className="dashboard-card-subtitle">Finished Work</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="dashboard-card-title">Completed</h4>
-                  <p className="dashboard-card-subtitle">Finished Work</p>
-                </div>
+                <div className="dashboard-card-arrow">›</div>
               </button>
 
               {/* All Requests */}
               <button onClick={() => setActiveTab('dashboard')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)' }}>
-                <div className="dashboard-card-top">
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">📋</div>
-                  <div className="dashboard-card-arrow">›</div>
+                  <div className="dashboard-card-copy">
+                    <h4 className="dashboard-card-title">All Requests</h4>
+                    <p className="dashboard-card-subtitle">Complete History</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="dashboard-card-title">All Requests</h4>
-                  <p className="dashboard-card-subtitle">Complete History</p>
-                </div>
+                <div className="dashboard-card-arrow">›</div>
               </button>
 
               {/* Admin Settings (Full Width Span) */}
               <button onClick={() => setActiveTab('db-management')} className="dashboard-card dashboard-card-full" style={{ background: 'linear-gradient(135deg, #475569, #334155)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">⚙️</div>
-                  <div>
+                  <div className="dashboard-card-copy">
                     <h4 className="dashboard-card-title" style={{ margin: 0 }}>Admin Settings</h4>
                     <p className="dashboard-card-subtitle">Manage Staff, Categories & More</p>
                   </div>
@@ -626,29 +622,29 @@ function App() {
             </div>
 
             {/* Quick Stats Summary Bar */}
-            <div style={{ marginTop: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div className="dashboard-quick-stats">
+              <div className="dashboard-quick-stats-title">
                 📈 Quick Stats
               </div>
               <div className="quick-stats-row">
                 <div className="quick-stat-box">
-                  <div className="quick-stat-label">Total</div>
+                  <div className="quick-stat-label"><span>📋</span> Total</div>
                   <div className="quick-stat-value">{requests.length}</div>
                 </div>
                 <div className="quick-stat-box">
-                  <div className="quick-stat-label">New</div>
+                  <div className="quick-stat-label"><span>🕒</span> New</div>
                   <div className="quick-stat-value" style={{ color: '#d97706' }}>{stats.new}</div>
                 </div>
                 <div className="quick-stat-box">
-                  <div className="quick-stat-label">In Progress</div>
+                  <div className="quick-stat-label"><span>🔧</span> In Progress</div>
                   <div className="quick-stat-value" style={{ color: '#7c3aed' }}>{stats.inProgress}</div>
                 </div>
                 <div className="quick-stat-box">
-                  <div className="quick-stat-label">Completed</div>
+                  <div className="quick-stat-label"><span>✅</span> Completed</div>
                   <div className="quick-stat-value" style={{ color: '#0f766e' }}>{completedJobs.length}</div>
                 </div>
                 <div className="quick-stat-box">
-                  <div className="quick-stat-label">Urgent</div>
+                  <div className="quick-stat-label"><span>⚠️</span> Urgent</div>
                   <div className="quick-stat-value" style={{ color: '#dc3545' }}>
                     {requests.filter(r => r.urgencyLevel === 'Urgent').length}
                   </div>
@@ -657,7 +653,7 @@ function App() {
             </div>
 
             {/* Footer Banner */}
-            <div style={{ background: '#e0f2fe', border: '1px solid #bae6fd', padding: '12px 14px', borderRadius: '12px', marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="dashboard-announcement">
               <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 'bold', lineHeight: '1.4' }}>
                 📢 Keep the hostel in good condition!<br />Report issues for quick resolution.
               </div>
@@ -665,8 +661,8 @@ function App() {
             </div>
 
             {/* Logout Button matching Reference Bottom Bar */}
-            <div style={{ marginTop: '20px' }}>
-              <button type="button" onClick={() => { setIsLoggedIn(false); setUserRole(''); setLoginData({ username: '', password: '' }); setActiveTab('admin-dashboard'); }} style={{ width: '100%', padding: '12px', border: 0, borderRadius: '10px', background: '#0d6efd', color: 'white', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(13, 110, 253, 0.25)' }}>
+            <div className="dashboard-logout">
+              <button type="button" onClick={() => { setIsLoggedIn(false); setUserRole(''); setLoginData({ username: '', password: '' }); setActiveTab('admin-dashboard'); }}>
                 🚪 Logout
               </button>
             </div>
