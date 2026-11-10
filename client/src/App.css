@@ -33,11 +33,13 @@ body {
 
 .app-main {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-header {
   flex: 0 0 auto;
-  padding: 6px 10px;
+  padding: 9px 12px;
   color: #fff;
   background: #0d6efd;
   box-shadow: 0 3px 10px rgba(15, 23, 42, 0.16);
@@ -53,9 +55,9 @@ body {
 }
 
 .app-header-logo {
-  width: 38px;
-  height: 38px;
-  flex: 0 0 38px;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
   object-fit: contain;
   border-radius: 6px;
   background: #fff;
@@ -68,14 +70,14 @@ body {
 
 .app-header-copy h2 {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1.15;
 }
 
 .app-header-copy p {
   margin: 3px 0 0;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -85,6 +87,8 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   padding: 0;
+  flex: 1;
+  grid-template-rows: repeat(4, minmax(76px, 1fr));
 }
 
 .dashboard-topbar {
@@ -109,8 +113,8 @@ body {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  min-height: 64px;
-  padding: 7px;
+  min-height: 76px;
+  padding: 9px;
   border: 1px solid rgba(15, 23, 42, 0.08);
   border-radius: 9px;
   color: #1e293b;
@@ -161,8 +165,8 @@ body {
 
 .dashboard-card-full {
   grid-column: span 2;
-  min-height: 42px;
-  padding: 5px 8px;
+  min-height: 52px;
+  padding: 7px 10px;
 }
 
 .dashboard-card:hover {
@@ -171,11 +175,11 @@ body {
 }
 
 .dashboard-card-icon {
-  font-size: 17px;
+  font-size: 22px;
   background: var(--card-accent, #2563eb);
   color: #fff;
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -196,7 +200,7 @@ body {
 
 .dashboard-card-title {
   color: #1e293b;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: bold;
   line-height: 1.15;
   margin: 0 0 2px;
@@ -204,7 +208,7 @@ body {
 
 .dashboard-card-subtitle {
   color: #526174;
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.15;
   opacity: 0.9;
   margin: 0;
@@ -279,8 +283,9 @@ body {
 .dashboard-overview {
   display: flex;
   flex-direction: column;
-  min-height: calc(100vh - 66px);
-  min-height: calc(100dvh - 66px);
+  flex: 1;
+  min-height: calc(100vh - 90px);
+  min-height: calc(100dvh - 90px);
   padding: 8px;
   border: none;
   border-radius: 10px;
@@ -363,76 +368,77 @@ body {
 
 @media (max-width: 340px) {
   .app-header {
-    padding: 6px;
-  }
-
-  @media (max-height: 720px) {
-    .dashboard-overview {
-      min-height: 0;
-    }
-
-    .dashboard-topbar {
-      min-height: 28px;
-      margin-bottom: 6px;
-    }
-
-    .dashboard-grid {
-      gap: 4px;
-    }
-
-    .dashboard-card {
-      min-height: 54px;
-      padding: 5px;
-    }
-
-    .dashboard-card-full {
-      min-height: 38px;
-    }
-
-    .dashboard-quick-stats {
-      margin-top: 6px;
-    }
-
-    .dashboard-announcement {
-      margin-top: 6px;
-      padding: 5px 8px;
-    }
-
-    .dashboard-logout {
-      padding-top: 6px;
-    }
+    padding: 7px;
   }
 
   .app-header-logo {
-    width: 32px;
-    height: 32px;
-    flex-basis: 32px;
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
   }
 
   .app-header-copy h2 {
-    font-size: 11px;
+    font-size: 12px;
+  }
+
+  .app-header-copy p {
+    font-size: 7px;
   }
 
   .dashboard-card {
-    min-height: 58px;
-    padding: 5px;
+    min-height: 68px;
+    padding: 6px;
   }
 
   .dashboard-card-icon {
-    width: 27px;
-    height: 27px;
-    font-size: 15px;
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
   }
 
   .dashboard-card-title {
-    font-size: 9px;
+    font-size: 11px;
   }
 
   .dashboard-card-subtitle {
-    font-size: 7px;
+    font-size: 8px;
   }
 
   .quick-stat-label {
     font-size: 6px;
+  }
+}
+
+@media (max-height: 720px) {
+  .dashboard-overview {
+    min-height: 0;
+  }
+
+  .dashboard-grid {
+    flex: 0 0 auto;
+    grid-template-rows: repeat(4, minmax(68px, auto));
+    gap: 4px;
+  }
+
+  .dashboard-card {
+    min-height: 68px;
+    padding: 6px;
+  }
+
+  .dashboard-card-full {
+    min-height: 46px;
+  }
+
+  .dashboard-quick-stats {
+    margin-top: 6px;
+  }
+
+  .dashboard-announcement {
+    margin-top: 6px;
+    padding: 5px 8px;
+  }
+
+  .dashboard-logout {
+    padding-top: 6px;
   }
 }
