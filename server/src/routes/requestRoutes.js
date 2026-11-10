@@ -9,6 +9,9 @@ router.get('/', requestController.getRequests);
 // POST create request
 router.post('/', requestMediaUpload, requestController.createRequest);
 
+// POST completion media separately from status-only PATCH requests
+router.post('/:id/completion', completionMediaUpload, requestController.updateRequestStatus);
+
 // PATCH update status/details
 router.patch('/:id', (req, res, next) => {
   if (req.is('application/json')) {
