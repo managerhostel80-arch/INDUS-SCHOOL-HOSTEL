@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
@@ -108,6 +108,9 @@ function App() {
   const [pushStatus, setPushStatus] = useState('');
   const [isEnablingPush, setIsEnablingPush] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraError, setCameraError] = useState('');
+  const cameraVideoRef = useRef(null);
 
   useEffect(() => {
     const updateISTClock = () => {
@@ -119,6 +122,22 @@ function App() {
     const interval = setInterval(updateISTClock, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!cameraStream || !cameraVideoRef.current) return undefined;
+
+    const videoElement = cameraVideoRef.current;
+    videoElement.srcObject = cameraStream;
+    videoElement.play().catch(error => {
+      console.error('Unable to start camera preview:', error);
+      setCameraError('Camera preview could not start. Check your browser camera permission and try again.');
+    });
+
+    return () => {
+      cameraStream.getTracks().forEach(track => track.stop());
+      videoElement.srcObject = null;
+    };
+  }, [cameraStream]);
 
   const fetchData = async () => {
     try {
@@ -263,6 +282,61 @@ function App() {
     } catch (err) {
       console.error('Submission error:', err);
     }
+  };
+
+  const startReportCamera = async () => {
+    setCameraError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraError('Camera capture is not supported here. Use Choose Photo to select an image instead.');
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' } }
+      });
+      setCameraStream(stream);
+    } catch (error) {
+      console.error('Unable to access camera:', error);
+      setCameraError(error.name === 'NotAllowedError'
+        ? 'Camera access was denied. Allow camera access in your browser settings and try again.'
+        : 'Could not open the camera. Check that it is available and try again.');
+    }
+  };
+
+  const captureReportPhoto = () => {
+    const video = cameraVideoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setCameraError('The camera is not ready yet. Wait for the preview, then try again.');
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      setCameraError('Could not prepare the camera image. Please try again.');
+      return;
+    }
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(blob => {
+      if (!blob) {
+        setCameraError('Could not capture the photo. Please try again.');
+        return;
+      }
+
+      const photo = new File([blob], `complaint-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      setFormData(previous => ({ ...previous, photo }));
+      setCameraStream(null);
+      setCameraError('');
+    }, 'image/jpeg', 0.9);
+  };
+
+  const closeReportCamera = () => {
+    setCameraStream(null);
+    setCameraError('');
   };
 
   const updateStatus = async (id, status, isCompletion = false, assignedName = null, assignedMobile = null) => {
@@ -776,20 +850,61 @@ function App() {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   onChange={event => setFormData(previous => ({
                     ...previous,
                     photo: event.target.files?.[0] || null
                   }))}
                   style={inputStyle}
                 />
+                <button
+                  type="button"
+                  onClick={startReportCamera}
+                  style={{ width: '100%', padding: '9px', marginTop: '6px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Take Photo with Camera
+                </button>
                 <p style={{ margin: '4px 0 0', color: '#666', fontSize: '11px' }}>
-                  On a phone, choose Take Photo to open the camera, or select an existing image.
+                  Choose a photo above or use the camera button.
                   {formData.photo ? ` Selected: ${formData.photo.name}` : ''}
                 </p>
+                {cameraError && <p role="alert" style={{ margin: '4px 0 0', color: '#b02a37', fontSize: '11px' }}>{cameraError}</p>}
               </div>
               <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
             </form>
+            {cameraStream && (
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-label="Take complaint photo"
+                style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0, 0, 0, 0.85)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box' }}
+              >
+                <video
+                  ref={cameraVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  aria-label="Live camera preview"
+                  style={{ width: '100%', maxWidth: '640px', maxHeight: '70vh', objectFit: 'contain', background: '#111', borderRadius: '8px' }}
+                />
+                {cameraError && <p role="alert" style={{ color: 'white', textAlign: 'center' }}>{cameraError}</p>}
+                <div style={{ display: 'flex', gap: '10px', marginTop: '14px', width: '100%', maxWidth: '640px' }}>
+                  <button
+                    type="button"
+                    onClick={captureReportPhoto}
+                    style={{ flex: 1, padding: '12px', background: '#198754', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Capture Photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeReportCamera}
+                    style={{ flex: 1, padding: '12px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
