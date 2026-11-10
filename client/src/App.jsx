@@ -492,7 +492,7 @@ function App() {
   }
 
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
+    <div className="app-shell" style={{ fontFamily: 'Arial, sans-serif', background: '#f4f6f9', minHeight: '100vh', width: '100%', maxWidth: '100vw', margin: 0, padding: 0, boxSizing: 'border-box', overflowX: 'hidden' }}>
       
       {/* Top Header Matching Reference Design */}
       <header className="app-header">
@@ -535,7 +535,7 @@ function App() {
             <div className="dashboard-grid">
               
               {/* Overview / Dashboard */}
-              <button onClick={() => setActiveTab('dashboard')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}>
+              <button onClick={() => setActiveTab('dashboard')} className="dashboard-card dashboard-card-blue">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">📊</div>
                   <div className="dashboard-card-copy">
@@ -547,7 +547,7 @@ function App() {
               </button>
 
               {/* Report a Problem */}
-              <button onClick={() => setActiveTab('report')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #16a34a, #15803d)' }}>
+              <button onClick={() => setActiveTab('report')} className="dashboard-card dashboard-card-green">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">➕</div>
                   <div className="dashboard-card-copy">
@@ -559,7 +559,7 @@ function App() {
               </button>
 
               {/* New Complaints */}
-              <button onClick={() => setActiveTab('new-complaint-view')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+              <button onClick={() => setActiveTab('new-complaint-view')} className="dashboard-card dashboard-card-amber">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">📥</div>
                   <div className="dashboard-card-copy">
@@ -572,7 +572,7 @@ function App() {
               </button>
 
               {/* Work in Progress */}
-              <button onClick={() => setActiveTab('electrician-in-progress')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>
+              <button onClick={() => setActiveTab('electrician-in-progress')} className="dashboard-card dashboard-card-purple">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">🔧</div>
                   <div className="dashboard-card-copy">
@@ -584,7 +584,7 @@ function App() {
               </button>
 
               {/* Completed */}
-              <button onClick={() => setActiveTab('completed-status')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}>
+              <button onClick={() => setActiveTab('completed-status')} className="dashboard-card dashboard-card-green">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">✅</div>
                   <div className="dashboard-card-copy">
@@ -596,7 +596,7 @@ function App() {
               </button>
 
               {/* All Requests */}
-              <button onClick={() => setActiveTab('dashboard')} className="dashboard-card" style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)' }}>
+              <button onClick={() => setActiveTab('dashboard')} className="dashboard-card dashboard-card-cyan">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">📋</div>
                   <div className="dashboard-card-copy">
@@ -608,7 +608,7 @@ function App() {
               </button>
 
               {/* Admin Settings (Full Width Span) */}
-              <button onClick={() => setActiveTab('db-management')} className="dashboard-card dashboard-card-full" style={{ background: 'linear-gradient(135deg, #475569, #334155)' }}>
+              <button onClick={() => setActiveTab('db-management')} className="dashboard-card dashboard-card-full dashboard-card-slate">
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">⚙️</div>
                   <div className="dashboard-card-copy">
