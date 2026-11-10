@@ -74,6 +74,8 @@ const requestMediaUpload = (req, res, next) => {
 };
 
 const completionMediaUpload = (req, res, next) => {
+  if (req.is('application/json')) return next();
+
   handleMediaUpload([
     { name: 'photo', maxCount: 1 },
     { name: 'video', maxCount: 1 },
@@ -125,6 +127,14 @@ const handleMediaUpload = (fields) => (req, res, next) => {
     }
 
     if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+        console.error('Rejected unexpected media upload field:', err.field);
+        return res.status(400).json({
+          success: false,
+          error: `Unexpected upload field "${err.field}". Expected completionPhoto and completionVideo for completion uploads.`
+        });
+      }
+
       const error = err.code === 'LIMIT_FILE_SIZE'
         ? 'Each attachment must be 20 MB or smaller.'
         : err.message;
