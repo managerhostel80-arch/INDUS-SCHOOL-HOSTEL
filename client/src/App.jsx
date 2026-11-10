@@ -497,17 +497,19 @@ function App() {
       {/* Top Header Matching Reference Design */}
       <header className="app-header">
         <div className="app-header-content">
-          <img className="app-header-logo" src="/school-logo-left.png" alt="Montessori Indus School logo" />
+          <div className="app-header-side app-header-side-left">
+            <img className="app-header-logo" src="/school-logo-left.png" alt="First Among Equals school logo" />
+          </div>
           <div className="app-header-copy">
             <h2>Montessori Indus<br />Residential School</h2>
             <p>Hostel 360 – Maintenance Management System</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ position: 'relative', cursor: 'pointer' }} onClick={handleEnableNotifications}>
+          <div className="app-header-side app-header-side-right">
+            <img className="app-header-logo" src="/school-logo-right.jpg" alt="Montessori Golden Jubilee logo" />
+            <button type="button" className="app-header-notifications" aria-label="Enable notifications" onClick={handleEnableNotifications}>
               <span style={{ fontSize: '22px' }}>🔔</span>
               {stats.new > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#dc3545', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stats.new}</span>}
-            </div>
-            <span style={{ fontSize: '20px', cursor: 'pointer' }}>⋮</span>
+            </button>
           </div>
         </div>
       </header>

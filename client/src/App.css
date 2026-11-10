@@ -48,24 +48,38 @@ body {
 }
 
 .app-header-content {
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 70px;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
 }
 
+.app-header-side {
+  display: flex;
+  align-items: center;
+}
+
+.app-header-side-left {
+  justify-content: flex-start;
+}
+
+.app-header-side-right {
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .app-header-logo {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
   object-fit: contain;
   border-radius: 6px;
   background: #fff;
 }
 
 .app-header-copy {
-  flex: 1;
   min-width: 0;
+  text-align: center;
 }
 
 .app-header-copy h2 {
@@ -80,6 +94,24 @@ body {
   font-size: 9px;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.app-header-notifications {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.app-header-notifications > span:first-child {
+  font-size: 18px !important;
 }
 
 .dashboard-grid {
@@ -372,9 +404,14 @@ body {
   }
 
   .app-header-logo {
-    width: 40px;
-    height: 40px;
-    flex-basis: 40px;
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .app-header-content {
+    grid-template-columns: 38px minmax(0, 1fr) 62px;
+    gap: 5px;
   }
 
   .app-header-copy h2 {
@@ -382,7 +419,15 @@ body {
   }
 
   .app-header-copy p {
-    font-size: 7px;
+    font-size: 6px;
+  }
+
+  .app-header-side-right {
+    gap: 2px;
+  }
+
+  .app-header-notifications {
+    width: 22px;
   }
 
   .dashboard-card {
