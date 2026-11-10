@@ -20,9 +20,6 @@ app.use(cors());
 // Serve uploaded static files publicly
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Connect to MongoDB
-connectDB();
-
 // Basic Test Route
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Indus Hostel Maintenance API' });
@@ -51,7 +48,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const PORT = Number(process.env.PORT) || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server listening on 0.0.0.0:${PORT}`);
+  connectDB().catch(error => {
+    console.error('MongoDB connection failed; database-backed requests may fail:', error.message);
+  });
 });
