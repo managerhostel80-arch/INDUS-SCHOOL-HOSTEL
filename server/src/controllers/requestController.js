@@ -147,6 +147,29 @@ exports.updateRequestStatus = async (req, res) => {
   }
 };
 
+exports.uploadProgressVideo = async (req, res) => {
+  try {
+    const video = req.files?.progressVideo?.[0];
+    if (!video) {
+      return res.status(400).json({ success: false, error: 'Select a work-in-progress video to upload.' });
+    }
+
+    const updatedRequest = await MaintenanceRequest.findOneAndUpdate(
+      { _id: req.params.id, status: 'In Progress' },
+      { progressVideo: getUploadedFileUrl(video) },
+      { new: true }
+    );
+
+    if (!updatedRequest) {
+      return res.status(404).json({ success: false, error: 'In-progress request not found.' });
+    }
+
+    res.json({ success: true, data: updatedRequest });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 // Clear all requests from database
 exports.clearAllRequests = async (req, res) => {
   try {
