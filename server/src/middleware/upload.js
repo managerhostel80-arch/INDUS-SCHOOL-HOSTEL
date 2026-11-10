@@ -74,8 +74,6 @@ const requestMediaUpload = (req, res, next) => {
 };
 
 const completionMediaUpload = (req, res, next) => {
-  if (req.is('application/json')) return next();
-
   handleMediaUpload([
     { name: 'photo', maxCount: 1 },
     { name: 'video', maxCount: 1 },
