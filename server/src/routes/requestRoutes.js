@@ -10,7 +10,13 @@ router.get('/', requestController.getRequests);
 router.post('/', requestMediaUpload, requestController.createRequest);
 
 // PATCH update status/details
-router.patch('/:id', completionMediaUpload, requestController.updateRequestStatus);
+router.patch('/:id', (req, res, next) => {
+  if (req.is('application/json')) {
+    return requestController.updateRequestStatus(req, res);
+  }
+
+  return completionMediaUpload(req, res, next);
+});
 
 // DELETE requests with a specific status
 router.delete('/status/:status', requestController.deleteRequestsByStatus);
