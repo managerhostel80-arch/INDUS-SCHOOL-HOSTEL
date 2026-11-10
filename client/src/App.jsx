@@ -773,7 +773,20 @@ function App() {
               </div>
               <div>
                 <label style={{ fontWeight: 'bold' }}>Photo</label>
-                <input type="file" accept="image/*" onChange={e => setFormData({...formData, photo: e.target.files[0]})} style={inputStyle} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={event => setFormData(previous => ({
+                    ...previous,
+                    photo: event.target.files?.[0] || null
+                  }))}
+                  style={inputStyle}
+                />
+                <p style={{ margin: '4px 0 0', color: '#666', fontSize: '11px' }}>
+                  On a phone, choose Take Photo to open the camera, or select an existing image.
+                  {formData.photo ? ` Selected: ${formData.photo.name}` : ''}
+                </p>
               </div>
               <button type="submit" style={{ padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '6px' }}>Submit</button>
             </form>
