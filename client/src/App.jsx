@@ -89,7 +89,6 @@ function App() {
   });
 
   const [completionData, setCompletionData] = useState({});
-  const [progressVideoFiles, setProgressVideoFiles] = useState({});
   const [updatingRequests, setUpdatingRequests] = useState({});
   const [selectedTechs, setSelectedTechs] = useState({});
   const [dbStats, setDbStats] = useState({ requests: 0 });
@@ -337,33 +336,6 @@ function App() {
         });
         window.alert('Completed successfully.');
       }
-    } catch (err) {
-      window.alert(err.message || 'Could not reach server.');
-    } finally {
-      setUpdatingRequests(previous => ({ ...previous, [id]: false }));
-    }
-  };
-
-  const uploadProgressVideo = async (id) => {
-    const video = progressVideoFiles[id];
-    if (!video || updatingRequests[id]) return;
-    const data = new FormData();
-    data.append('progressVideo', video);
-    setUpdatingRequests(previous => ({ ...previous, [id]: true }));
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/requests/${id}/progress-video`, { method: 'POST', body: data });
-      const result = await res.json();
-      if (!res.ok || !result?.success) {
-        window.alert(result?.error || 'Could not upload video.');
-        return;
-      }
-      setProgressVideoFiles(previous => {
-        const next = { ...previous };
-        delete next[id];
-        return next;
-      });
-      await fetchData();
-      window.alert('Progress video saved.');
     } catch (err) {
       window.alert(err.message || 'Could not reach server.');
     } finally {
@@ -937,44 +909,6 @@ function App() {
                   )}
                   {req.status === 'In Progress' && (
                     <div style={{ marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                      <label htmlFor={`progress-video-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
-                        Upload work-in-progress video (Optional):
-                      </label>
-                      <input
-                        id={`progress-video-${req._id}`}
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
-                        onChange={event => {
-                          const video = event.target.files?.[0];
-                          if (video && video.size > 20 * 1024 * 1024) {
-                            event.target.value = '';
-                            setProgressVideoFiles(previous => {
-                              const next = { ...previous };
-                              delete next[req._id];
-                              return next;
-                            });
-                            window.alert('Work-in-progress video must be 20 MB or smaller.');
-                            return;
-                          }
-                          setProgressVideoFiles(previous => ({
-                            ...previous,
-                            [req._id]: video
-                          }));
-                        }}
-                        style={{...inputStyle, margin: '4px 0'}}
-                      />
-                      <p style={{ margin: '0 0 6px', color: '#666', fontSize: '11px' }}>Maximum video size: 20 MB.</p>
-                      {progressVideoFiles[req._id] && (
-                        <button
-                          type="button"
-                          onClick={() => uploadProgressVideo(req._id)}
-                          disabled={Boolean(updatingRequests[req._id])}
-                          style={{ width: '100%', padding: '7px', marginBottom: '8px', background: updatingRequests[req._id] ? '#6c757d' : '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: updatingRequests[req._id] ? 'wait' : 'pointer' }}
-                        >
-                          {updatingRequests[req._id] ? 'Saving work-in-progress video...' : 'Save Work-in-Progress Video'}
-                        </button>
-                      )}
-                      {req.progressVideo && renderVideo('Saved Work in Progress Video', req.progressVideo, `Work in progress video for ${req.requestId}`)}
                       <label htmlFor={`completion-photo-${req._id}`} style={{ display: 'block', fontWeight: 'bold', marginTop: '4px' }}>
                         Upload completed work photo (Required):
                       </label>
