@@ -73,6 +73,8 @@ function App() {
   const [stats, setStats] = useState({ new: 0, accepted: 0, inProgress: 0, completed: 0 });
   const [filterCategory, setFilterCategory] = useState('All');
   const [completedFilterCategory, setCompletedFilterCategory] = useState('All');
+  const [completedDeleteCategory, setCompletedDeleteCategory] = useState('All');
+  const [isDeletingCompleted, setIsDeletingCompleted] = useState(false);
   const [submittedRequest, setSubmittedRequest] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -380,6 +382,41 @@ function App() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleDeleteCompletedRequests = async () => {
+    const matchingCount = requests.filter(request =>
+      request.status === 'Completed' &&
+      (completedDeleteCategory === 'All' || request.category === completedDeleteCategory)
+    ).length;
+    if (matchingCount === 0) {
+      window.alert('There are no completed complaints in this category.');
+      return;
+    }
+
+    const categoryDescription = completedDeleteCategory === 'All'
+      ? 'all categories'
+      : completedDeleteCategory;
+    if (!window.confirm(`Permanently delete ${matchingCount} completed complaint(s) from ${categoryDescription}?`)) return;
+
+    setIsDeletingCompleted(true);
+    try {
+      const query = completedDeleteCategory === 'All'
+        ? ''
+        : `?category=${encodeURIComponent(completedDeleteCategory)}`;
+      const response = await fetch(`${API_BASE_URL}/api/requests/status/Completed${query}`, { method: 'DELETE' });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Could not delete completed complaints.');
+      }
+
+      window.alert(result.message);
+      await fetchData();
+    } catch (error) {
+      window.alert(error.message || 'Could not reach the server.');
+    } finally {
+      setIsDeletingCompleted(false);
     }
   };
 
@@ -1068,6 +1105,33 @@ function App() {
             <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b></p>
+            <section aria-labelledby="delete-completed-heading" style={{ marginTop: '16px', padding: '10px', border: '1px solid #f1aeb5', borderRadius: '6px' }}>
+              <h4 id="delete-completed-heading" style={{ margin: '0 0 8px', fontSize: '13px' }}>Delete Completed Complaints</h4>
+              <label htmlFor="delete-completed-category" style={{ display: 'block', marginBottom: '4px' }}>Filter by category</label>
+              <select
+                id="delete-completed-category"
+                value={completedDeleteCategory}
+                onChange={event => setCompletedDeleteCategory(event.target.value)}
+                style={inputStyle}
+              >
+                {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(category => (
+                  <option key={category} value={category}>{category === 'All' ? 'All categories' : category}</option>
+                ))}
+              </select>
+              <p style={{ margin: '6px 0', color: '#555' }}>
+                {requests.filter(request =>
+                  request.status === 'Completed' &&
+                  (completedDeleteCategory === 'All' || request.category === completedDeleteCategory)
+                ).length} completed complaint(s) match this category.
+              </p>
+              <button
+                onClick={handleDeleteCompletedRequests}
+                disabled={isDeletingCompleted}
+                style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '4px', opacity: isDeletingCompleted ? 0.7 : 1 }}
+              >
+                {isDeletingCompleted ? 'Deleting...' : 'Delete Completed Complaints'}
+              </button>
+            </section>
             <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
           </div>
         )}
