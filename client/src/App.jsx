@@ -655,7 +655,7 @@ function App() {
               <div className="dashboard-announcement-copy">
                 📢 Keep the hostel in good condition!<br />Report issues for quick resolution.
               </div>
-              <img className="dashboard-announcement-logo" src="/school-logo-right.jpg" alt="Montessori Golden Jubilee" />
+              <img className="dashboard-announcement-logo" src="/maintenance-worker.jpg" alt="Maintenance worker" />
             </div>
 
             {/* Logout Button matching Reference Bottom Bar */}
