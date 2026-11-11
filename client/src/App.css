@@ -101,7 +101,7 @@ body {
   gap: 6px;
   padding: 0;
   flex: 1;
-  grid-template-rows: repeat(3, minmax(78px, 1fr)) minmax(40px, auto);
+  grid-template-rows: repeat(3, minmax(68px, 1fr)) minmax(36px, auto);
 }
 
 .dashboard-topbar {
@@ -126,8 +126,8 @@ body {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  min-height: 78px;
-  padding: 8px;
+  min-height: 68px;
+  padding: 6px;
   border: 1px solid var(--card-border, rgba(15, 23, 42, 0.1));
   border-radius: 9px;
   color: #1e293b;
@@ -142,7 +142,7 @@ body {
 .dashboard-card-content {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -184,14 +184,14 @@ body {
 
 .dashboard-card-full {
   grid-column: span 2;
-  min-height: 44px;
-  padding: 4px 8px;
+  min-height: 36px;
+  padding: 3px 7px;
 }
 
 .dashboard-card-full .dashboard-card-icon {
-  width: 34px;
-  height: 34px;
-  font-size: 19px;
+  width: 29px;
+  height: 29px;
+  font-size: 17px;
 }
 
 .dashboard-card:hover {
@@ -201,11 +201,11 @@ body {
 }
 
 .dashboard-card-icon {
-  font-size: 24px;
+  font-size: 21px;
   background: var(--card-accent, #2563eb);
   color: #fff;
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -226,7 +226,7 @@ body {
 
 .dashboard-card-title {
   color: #1e293b;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
   line-height: 1.15;
   margin: 0 0 2px;
@@ -234,7 +234,7 @@ body {
 
 .dashboard-card-subtitle {
   color: #526174;
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.15;
   opacity: 0.9;
   margin: 0;
@@ -423,14 +423,14 @@ body {
   }
 
   .dashboard-card {
-    min-height: 70px;
-    padding: 5px;
+    min-height: 62px;
+    padding: 4px;
   }
 
   .dashboard-card-icon {
-    width: 38px;
-    height: 38px;
-    font-size: 20px;
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
   }
 
   .dashboard-card-title {
@@ -455,24 +455,24 @@ body {
   .dashboard-grid {
     flex: 1 1 0;
     min-height: 0;
-    grid-template-rows: repeat(3, minmax(52px, 1fr)) minmax(38px, auto);
+    grid-template-rows: repeat(3, minmax(46px, 1fr)) minmax(32px, auto);
     gap: 4px;
   }
 
   .dashboard-card {
-    min-height: 52px;
-    padding: 5px;
+    min-height: 46px;
+    padding: 4px;
   }
 
   .dashboard-card-full {
-    min-height: 40px;
-    padding: 3px 8px;
+    min-height: 32px;
+    padding: 2px 6px;
   }
 
   .dashboard-card-full .dashboard-card-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 18px;
+    width: 26px;
+    height: 26px;
+    font-size: 15px;
   }
 
   .dashboard-quick-stats {
