@@ -388,21 +388,23 @@ function App() {
   const handleDeleteCompletedRequests = async () => {
     const matchingCount = requests.filter(request =>
       request.status === 'Completed' &&
-      (completedDeleteCategory === 'All' || request.category === completedDeleteCategory)
+      (completedDeleteCategory === 'All' ||
+        completedDeleteCategory === 'Completed' ||
+        request.category === completedDeleteCategory)
     ).length;
     if (matchingCount === 0) {
       window.alert('There are no completed complaints in this category.');
       return;
     }
 
-    const categoryDescription = completedDeleteCategory === 'All'
+    const categoryDescription = completedDeleteCategory === 'All' || completedDeleteCategory === 'Completed'
       ? 'all categories'
       : completedDeleteCategory;
     if (!window.confirm(`Permanently delete ${matchingCount} completed complaint(s) from ${categoryDescription}?`)) return;
 
     setIsDeletingCompleted(true);
     try {
-      const query = completedDeleteCategory === 'All'
+      const query = completedDeleteCategory === 'All' || completedDeleteCategory === 'Completed'
         ? ''
         : `?category=${encodeURIComponent(completedDeleteCategory)}`;
       const response = await fetch(`${API_BASE_URL}/api/requests/status/Completed${query}`, { method: 'DELETE' });
@@ -1107,13 +1109,14 @@ function App() {
             <p>Requests: <b>{dbStats.requests}</b></p>
             <section aria-labelledby="delete-completed-heading" style={{ marginTop: '16px', padding: '10px', border: '1px solid #f1aeb5', borderRadius: '6px' }}>
               <h4 id="delete-completed-heading" style={{ margin: '0 0 8px', fontSize: '13px' }}>Delete Completed Complaints</h4>
-              <label htmlFor="delete-completed-category" style={{ display: 'block', marginBottom: '4px' }}>Filter by category</label>
+              <label htmlFor="delete-completed-category" style={{ display: 'block', marginBottom: '4px' }}>Filter completed complaints</label>
               <select
                 id="delete-completed-category"
                 value={completedDeleteCategory}
                 onChange={event => setCompletedDeleteCategory(event.target.value)}
                 style={inputStyle}
               >
+                <option value="Completed">Completed (all categories)</option>
                 {['All', 'Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'].map(category => (
                   <option key={category} value={category}>{category === 'All' ? 'All categories' : category}</option>
                 ))}
@@ -1121,7 +1124,9 @@ function App() {
               <p style={{ margin: '6px 0', color: '#555' }}>
                 {requests.filter(request =>
                   request.status === 'Completed' &&
-                  (completedDeleteCategory === 'All' || request.category === completedDeleteCategory)
+                  (completedDeleteCategory === 'All' ||
+                    completedDeleteCategory === 'Completed' ||
+                    request.category === completedDeleteCategory)
                 ).length} completed complaint(s) match this category.
               </p>
               <button
