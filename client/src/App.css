@@ -130,7 +130,7 @@ body {
   padding: 4px;
   border: 1px solid var(--card-border, rgba(15, 23, 42, 0.1));
   border-radius: 9px;
-  color: #1e293b;
+  color: #fff;
   text-decoration: none;
   cursor: pointer;
   box-shadow: 0 3px 9px rgba(15, 23, 42, 0.12);
@@ -147,39 +147,39 @@ body {
 }
 
 .dashboard-card-blue {
-  --card-accent: #2563eb;
-  --card-border: #93c5fd;
-  background: linear-gradient(120deg, #bfdbfe, #dbeafe);
+  --card-accent: #1d4ed8;
+  --card-border: #1d4ed8;
+  background: linear-gradient(120deg, #2563eb, #1d4ed8);
 }
 
 .dashboard-card-green {
-  --card-accent: #16a34a;
-  --card-border: #86efac;
-  background: linear-gradient(120deg, #bbf7d0, #dcfce7);
+  --card-accent: #15803d;
+  --card-border: #15803d;
+  background: linear-gradient(120deg, #16a34a, #15803d);
 }
 
 .dashboard-card-amber {
-  --card-accent: #d97706;
-  --card-border: #fcd34d;
-  background: linear-gradient(120deg, #fde68a, #fef3c7);
+  --card-accent: #b45309;
+  --card-border: #b45309;
+  background: linear-gradient(120deg, #f59e0b, #b45309);
 }
 
 .dashboard-card-purple {
-  --card-accent: #7c3aed;
-  --card-border: #c4b5fd;
-  background: linear-gradient(120deg, #ddd6fe, #ede9fe);
+  --card-accent: #6d28d9;
+  --card-border: #6d28d9;
+  background: linear-gradient(120deg, #8b5cf6, #6d28d9);
 }
 
 .dashboard-card-cyan {
-  --card-accent: #0284c7;
-  --card-border: #7dd3fc;
-  background: linear-gradient(120deg, #bae6fd, #e0f2fe);
+  --card-accent: #0369a1;
+  --card-border: #0369a1;
+  background: linear-gradient(120deg, #0284c7, #0369a1);
 }
 
 .dashboard-card-slate {
-  --card-accent: #4338ca;
-  --card-border: #a5b4fc;
-  background: linear-gradient(120deg, #e0e7ff, #c7d2fe);
+  --card-accent: #3730a3;
+  --card-border: #3730a3;
+  background: linear-gradient(120deg, #4f46e5, #3730a3);
 }
 
 .dashboard-card-full {
@@ -202,8 +202,8 @@ body {
 
 .dashboard-card-icon {
   font-size: 26px;
-  background: var(--card-accent, #2563eb);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--card-accent, #2563eb);
   width: 48px;
   height: 48px;
   display: flex;
@@ -221,11 +221,11 @@ body {
   flex: 0 0 auto;
   font-size: 20px;
   font-weight: bold;
-  color: var(--card-accent, #2563eb);
+  color: #fff;
 }
 
 .dashboard-card-title {
-  color: #1e293b;
+  color: #fff;
   font-size: 13px;
   font-weight: bold;
   line-height: 1.15;
@@ -233,7 +233,7 @@ body {
 }
 
 .dashboard-card-subtitle {
-  color: #526174;
+  color: #fff;
   font-size: 9px;
   line-height: 1.15;
   opacity: 0.9;
