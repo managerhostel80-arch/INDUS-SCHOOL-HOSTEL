@@ -108,7 +108,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 38px;
+  min-height: 46px;
   margin-bottom: 8px;
   padding: 4px 8px;
   border-radius: 7px;
@@ -277,8 +277,8 @@ body {
 .quick-stat-box {
   background: white;
   min-width: 0;
-  min-height: 52px;
-  padding: 9px 2px;
+  min-height: 60px;
+  padding: 11px 2px;
   border-radius: 8px;
   text-align: center;
   border: 1px solid #e2e8f0;
@@ -347,6 +347,16 @@ body {
   border-radius: 4px;
 }
 
+.dashboard-footer-image {
+  display: block;
+  width: 100%;
+  max-height: 100px;
+  margin-top: 6px;
+  border-radius: 8px;
+  object-fit: cover;
+  object-position: center;
+}
+
 .dashboard-logout {
   margin-top: 6px;
   padding-top: 0;
@@ -367,6 +377,17 @@ body {
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 3px 8px rgba(13, 110, 253, 0.25);
+}
+
+.dashboard-back-button {
+  background: #facc15 !important;
+  color: #422006 !important;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  margin-bottom: 8px;
 }
 
 .completed-photo-grid {

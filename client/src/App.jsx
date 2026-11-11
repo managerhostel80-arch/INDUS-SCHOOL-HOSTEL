@@ -664,6 +664,7 @@ function App() {
                 🚪 Logout
               </button>
             </div>
+            <img className="dashboard-footer-image" src="/dashboard-school.jpg" alt="Montessori Indus Residential School campus" />
 
           </div>
         )}
@@ -671,7 +672,7 @@ function App() {
         {/* REPORT TAB */}
         {activeTab === 'report' && (
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd' }}>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ background: '#64748b', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>← Back to Dashboard</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Report Issue</h3>
             <form onSubmit={handleReportSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px' }}>
               <div>
@@ -792,7 +793,7 @@ function App() {
         {/* NEW COMPLAINTS TAB */}
         {activeTab === 'new-complaint-view' && (
           <div>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ background: '#64748b', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>← Back to Dashboard</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>New Complaints</h3>
             {newComplaintJobs.length === 0 ? <p style={{ fontSize: '12px' }}>No new complaints.</p> : newComplaintJobs.map(req => {
               const tech = selectedTechs[req._id] || { name: '', mobile: '' };
@@ -815,7 +816,7 @@ function App() {
         {/* REQUESTS LIST TAB (All Requests) */}
         {activeTab === 'dashboard' && (
           <div>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ background: '#64748b', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>← Back to Dashboard</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>
               All Requests ({filteredRequests.length})
             </h3>
@@ -866,7 +867,7 @@ function App() {
         {/* WORK IN PROGRESS TAB */}
         {activeTab === 'electrician-in-progress' && (
           <div>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ background: '#64748b', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>← Back to Dashboard</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Work in Progress</h3>
             {requests.length === 0 ? (
               <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
@@ -1014,7 +1015,7 @@ function App() {
         {/* COMPLETED TAB */}
         {activeTab === 'completed-status' && (
           <div>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ background: '#64748b', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>← Back to Dashboard</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Completed Jobs ({filteredCompletedJobs.length})</h3>
             
             <div className="completed-category-filter">
@@ -1064,7 +1065,7 @@ function App() {
         {/* SETTINGS TAB */}
         {activeTab === 'db-management' && userRole === 'admin' && (
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '12px' }}>
-            <button onClick={() => setActiveTab('admin-dashboard')} style={{ background: '#64748b', color: 'white', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', marginBottom: '8px' }}>← Back to Dashboard</button>
+            <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b></p>
             <button onClick={handleClearDatabase} style={{ width: '100%', padding: '10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '10px' }}>Clear Database</button>
