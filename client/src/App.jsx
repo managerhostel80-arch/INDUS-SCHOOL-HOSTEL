@@ -652,9 +652,10 @@ function App() {
 
             {/* Footer Banner */}
             <div className="dashboard-announcement">
-              <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 'bold', lineHeight: '1.4' }}>
+              <div className="dashboard-announcement-copy">
                 📢 Keep the hostel in good condition!<br />Report issues for quick resolution.
               </div>
+              <img className="dashboard-announcement-logo" src="/school-logo-right.jpg" alt="Montessori Golden Jubilee" />
             </div>
 
             {/* Logout Button matching Reference Bottom Bar */}
