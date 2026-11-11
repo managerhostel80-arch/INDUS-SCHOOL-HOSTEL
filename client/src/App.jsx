@@ -658,14 +658,14 @@ function App() {
               <img className="dashboard-announcement-logo" src="/maintenance-worker.jpg?v=2" alt="Maintenance worker" />
             </div>
 
-            <img className="dashboard-footer-image" src="/logout-icon.png" alt="Logout" />
-
             {/* Logout Button matching Reference Bottom Bar */}
             <div className="dashboard-logout">
               <button type="button" onClick={() => { setIsLoggedIn(false); setUserRole(''); setLoginData({ username: '', password: '' }); setActiveTab('admin-dashboard'); }}>
-                🚪 Logout
+                <img className="dashboard-logout-icon" src="/logout-icon.png" alt="" />
+                Logout
               </button>
             </div>
+            <img className="dashboard-footer-image" src="/dashboard-school.jpg" alt="Montessori Indus Residential School campus" />
 
           </div>
         )}
