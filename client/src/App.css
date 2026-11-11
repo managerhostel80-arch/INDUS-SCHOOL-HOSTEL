@@ -108,7 +108,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 32px;
+  min-height: 38px;
   margin-bottom: 8px;
   padding: 4px 8px;
   border-radius: 7px;
@@ -277,7 +277,8 @@ body {
 .quick-stat-box {
   background: white;
   min-width: 0;
-  padding: 6px 2px;
+  min-height: 52px;
+  padding: 9px 2px;
   border-radius: 8px;
   text-align: center;
   border: 1px solid #e2e8f0;
