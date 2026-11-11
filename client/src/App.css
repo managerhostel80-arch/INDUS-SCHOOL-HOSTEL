@@ -101,7 +101,7 @@ body {
   gap: 6px;
   padding: 0;
   flex: 0 0 auto;
-  grid-template-rows: repeat(3, minmax(52px, auto)) minmax(32px, auto);
+  grid-template-rows: repeat(3, minmax(58px, auto)) minmax(32px, auto);
 }
 
 .dashboard-topbar {
@@ -126,7 +126,7 @@ body {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  min-height: 52px;
+  min-height: 58px;
   padding: 0 3px;
   border: 1px solid var(--card-border, rgba(15, 23, 42, 0.1));
   border-radius: 9px;
@@ -347,8 +347,8 @@ body {
 }
 
 .dashboard-logout {
-  margin-top: auto;
-  padding-top: 8px;
+  margin-top: 6px;
+  padding-top: 0;
 }
 
 .dashboard-logout button {
@@ -454,12 +454,12 @@ body {
 
   .dashboard-grid {
     flex: 0 0 auto;
-    grid-template-rows: repeat(3, minmax(52px, auto)) minmax(30px, auto);
+    grid-template-rows: repeat(3, minmax(58px, auto)) minmax(30px, auto);
     gap: 3px;
   }
 
   .dashboard-card {
-    min-height: 52px;
+    min-height: 58px;
     padding: 0 2px;
   }
 
@@ -484,7 +484,8 @@ body {
   }
 
   .dashboard-logout {
-    padding-top: 4px;
+    margin-top: 4px;
+    padding-top: 0;
   }
 
   .dashboard-logout button {
