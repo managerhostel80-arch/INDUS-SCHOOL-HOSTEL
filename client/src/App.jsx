@@ -661,7 +661,6 @@ function App() {
             {/* Logout Button matching Reference Bottom Bar */}
             <div className="dashboard-logout">
               <button type="button" onClick={() => { setIsLoggedIn(false); setUserRole(''); setLoginData({ username: '', password: '' }); setActiveTab('admin-dashboard'); }}>
-                <img className="dashboard-logout-icon" src="/logout-icon.png" alt="" />
                 Logout
               </button>
             </div>

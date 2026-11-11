@@ -380,12 +380,6 @@ body {
   box-shadow: 0 3px 8px rgba(13, 110, 253, 0.25);
 }
 
-.dashboard-logout-icon {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
 .dashboard-back-button {
   background: #dc2626 !important;
   color: #fff !important;
