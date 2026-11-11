@@ -189,11 +189,21 @@ exports.deleteRequestsByStatus = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid request status.' });
     }
 
-    const result = await MaintenanceRequest.deleteMany({ status });
+    const validCategories = ['Electrical', 'Plumbing', 'Civil/Tile', 'AC', 'Carpentry', 'Cleaning', 'Pest Control'];
+    const { category } = req.query;
+    if (category !== undefined && category !== 'All' && !validCategories.includes(category)) {
+      return res.status(400).json({ success: false, error: 'Invalid request category.' });
+    }
+
+    const filter = { status };
+    if (category && category !== 'All') filter.category = category;
+
+    const result = await MaintenanceRequest.deleteMany(filter);
+    const categoryDescription = category && category !== 'All' ? ` in ${category}` : '';
     res.json({
       success: true,
       deletedCount: result.deletedCount,
-      message: `${result.deletedCount} ${status} request(s) deleted successfully.`
+      message: `${result.deletedCount} ${status}${categoryDescription} request(s) deleted successfully.`
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
