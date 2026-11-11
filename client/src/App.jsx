@@ -505,7 +505,7 @@ function App() {
             <p>Hostel 360 – Maintenance Management System</p>
           </div>
           <div className="app-header-side app-header-side-right">
-            <div className="app-header-avatar" role="img" aria-label="Maintenance worker">👨‍🔧</div>
+            <img className="app-header-logo" src="/school-logo-right.jpg" alt="Montessori Golden Jubilee logo" />
           </div>
         </div>
       </header>
