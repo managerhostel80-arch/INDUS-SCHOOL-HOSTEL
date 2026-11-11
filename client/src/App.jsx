@@ -556,6 +556,8 @@ function App() {
         {activeTab === 'admin-dashboard' && userRole === 'admin' && (
           <div className="dashboard-overview">
             
+            <img className="dashboard-footer-image" src="/dashboard-school.jpg" alt="Montessori Indus Residential School campus" />
+
             {/* Top Bar Info (Admin Panel & Live IST Clock) */}
             <div className="dashboard-topbar">
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -703,7 +705,6 @@ function App() {
                 Logout
               </button>
             </div>
-            <img className="dashboard-footer-image" src="/dashboard-school.jpg" alt="Montessori Indus Residential School campus" />
 
           </div>
         )}
