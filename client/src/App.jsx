@@ -505,11 +505,7 @@ function App() {
             <p>Hostel 360 – Maintenance Management System</p>
           </div>
           <div className="app-header-side app-header-side-right">
-            <img className="app-header-logo" src="/school-logo-right.jpg" alt="Montessori Golden Jubilee logo" />
-            <button type="button" className="app-header-notifications" aria-label="Enable notifications" onClick={handleEnableNotifications}>
-              <span style={{ fontSize: '22px' }}>🔔</span>
-              {stats.new > 0 && <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#dc3545', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{stats.new}</span>}
-            </button>
+            <div className="app-header-avatar" role="img" aria-label="Maintenance worker">👨‍🔧</div>
           </div>
         </div>
       </header>
@@ -659,7 +655,6 @@ function App() {
               <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 'bold', lineHeight: '1.4' }}>
                 📢 Keep the hostel in good condition!<br />Report issues for quick resolution.
               </div>
-              <div style={{ fontSize: '26px' }}>👨‍🔧</div>
             </div>
 
             {/* Logout Button matching Reference Bottom Bar */}
