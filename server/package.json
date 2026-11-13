@@ -11,6 +11,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "googleapis": "^190.0.0",
     "mongoose": "^8.3.1",
     "multer": "^2.4.0",
     "multer-storage-cloudinary": "^4.0.0",
