@@ -38,6 +38,13 @@ app.use('/api/team', getRouter(teamRoutes, 'teamRoutes'));
 app.use('/api/db', getRouter(dbRoutes, 'dbRoutes'));
 app.use('/api/push', getRouter(pushRoutes, 'pushRoutes'));
 
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: `API endpoint not found: ${req.method} ${req.originalUrl}. Make sure the latest backend version is deployed.`
+  });
+});
+
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
   console.error('Unhandled server error:', err.stack);
