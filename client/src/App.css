@@ -326,7 +326,7 @@ body {
   justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
-  padding: 10px 8px;
+  padding: 6px 8px;
   border: 1px solid #bae6fd;
   border-radius: 9px;
   background: #e0f2fe;
@@ -342,7 +342,7 @@ body {
 
 .dashboard-announcement-logo {
   width: 58px;
-  height: 60px;
+  height: 48px;
   flex: 0 0 58px;
   object-fit: contain;
   border-radius: 4px;
@@ -505,11 +505,11 @@ body {
 
   .dashboard-announcement {
     margin-top: 6px;
-    padding: 8px;
+    padding: 5px 8px;
   }
 
   .dashboard-announcement-logo {
-    height: 54px;
+    height: 44px;
   }
 
   .dashboard-logout {
