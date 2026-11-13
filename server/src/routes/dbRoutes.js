@@ -1,11 +1,14 @@
 const express = require('express');
 const crypto = require('crypto');
+const { google } = require('googleapis');
 const router = express.Router();
 const MaintenanceRequest = require('../models/Request');
 const MaintenanceTeam = require('../models/MaintenanceTeam');
 const PushSubscription = require('../models/PushSubscription');
 
 const BACKUP_FORMAT = 'indus-hostel-maintenance-backup';
+const DRIVE_BACKUP_PREFIX = 'hostel-maintenance-backup-';
+const MAX_BACKUP_SIZE = 50 * 1024 * 1024;
 const backupModels = {
   requests: MaintenanceRequest,
   teamMembers: MaintenanceTeam,
@@ -72,11 +75,103 @@ const validateBackup = async backup => {
   }
 };
 
+const createBackup = async () => {
+  const [requests, teamMembers, pushSubscriptions] = await Promise.all([
+    MaintenanceRequest.find().lean(),
+    MaintenanceTeam.find().lean(),
+    PushSubscription.find().lean()
+  ]);
+  const exportedAt = new Date();
+  return {
+    format: BACKUP_FORMAT,
+    version: 1,
+    exportedAt: exportedAt.toISOString(),
+    collections: { requests, teamMembers, pushSubscriptions }
+  };
+};
+
+const getGoogleDrive = () => {
+  const encodedCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64;
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  if (!encodedCredentials || !folderId) {
+    throw new Error('Google Drive backup is not configured on the server.');
+  }
+
+  let credentials;
+  try {
+    credentials = JSON.parse(Buffer.from(encodedCredentials, 'base64').toString('utf8'));
+  } catch {
+    throw new Error('The Google Drive service-account configuration is invalid.');
+  }
+  if (!credentials.client_email || !credentials.private_key) {
+    throw new Error('The Google Drive service-account configuration is incomplete.');
+  }
+
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive']
+  });
+  return { drive: google.drive({ version: 'v3', auth }), folderId };
+};
+
 const replaceCollection = async (Model, records) => {
   await Model.deleteMany({});
   if (records.length > 0) {
     await Model.insertMany(records, { ordered: true });
   }
+};
+
+const restoreDatabaseBackup = async backup => {
+  try {
+    await validateBackup(backup);
+  } catch (err) {
+    return { status: 400, body: { success: false, error: err.message || 'This backup is not valid.' } };
+  }
+
+  const previousData = {};
+  try {
+    for (const [collectionName, Model] of Object.entries(backupModels)) {
+      previousData[collectionName] = await Model.find().lean();
+    }
+  } catch {
+    return { status: 500, body: { success: false, error: 'Could not read the current database before restoring.' } };
+  }
+
+  try {
+    for (const [collectionName, Model] of Object.entries(backupModels)) {
+      await replaceCollection(Model, backup.collections[collectionName]);
+    }
+  } catch (restoreError) {
+    try {
+      for (const [collectionName, Model] of Object.entries(backupModels)) {
+        await replaceCollection(Model, previousData[collectionName]);
+      }
+    } catch (rollbackError) {
+      console.error('Database restore failed and rollback was incomplete:', rollbackError);
+      return {
+        status: 500,
+        body: {
+          success: false,
+          error: 'Restore failed and the previous database could not be fully recovered. Check the server logs immediately.'
+        }
+      };
+    }
+    console.error('Database restore failed; the previous data was restored:', restoreError);
+    return { status: 500, body: { success: false, error: 'Restore failed. The previous database data was restored.' } };
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      message: 'Backup restored successfully.',
+      stats: {
+        requests: backup.collections.requests.length,
+        teamMembers: backup.collections.teamMembers.length,
+        pushSubscriptions: backup.collections.pushSubscriptions.length
+      }
+    }
+  };
 };
 
 // GET database stats (total requests and team members count)
@@ -100,11 +195,7 @@ router.get('/stats', async (req, res) => {
 // Download a complete JSON backup of the application collections.
 router.get('/backup', requireBackupKey, async (req, res) => {
   try {
-    const [requests, teamMembers, pushSubscriptions] = await Promise.all([
-      MaintenanceRequest.find().lean(),
-      MaintenanceTeam.find().lean(),
-      PushSubscription.find().lean()
-    ]);
+    const backup = await createBackup();
     const exportedAt = new Date();
     const filename = `hostel-maintenance-backup-${exportedAt.toISOString().replace(/[:.]/g, '-')}.json`;
 
@@ -113,12 +204,7 @@ router.get('/backup', requireBackupKey, async (req, res) => {
       'Content-Disposition': `attachment; filename="${filename}"`,
       'Access-Control-Expose-Headers': 'Content-Disposition'
     });
-    res.json({
-      format: BACKUP_FORMAT,
-      version: 1,
-      exportedAt: exportedAt.toISOString(),
-      collections: { requests, teamMembers, pushSubscriptions }
-    });
+    res.json(backup);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -126,50 +212,102 @@ router.get('/backup', requireBackupKey, async (req, res) => {
 
 // Replace application data with a validated backup.
 router.post('/backup/restore', requireBackupKey, async (req, res) => {
-  try {
-    await validateBackup(req.body);
-  } catch (err) {
-    return res.status(400).json({ success: false, error: err.message || 'This backup is not valid.' });
-  }
+  const result = await restoreDatabaseBackup(req.body);
+  return res.status(result.status).json(result.body);
+});
 
-  const previousData = {};
+router.post('/backup/drive', requireBackupKey, async (req, res) => {
   try {
-    for (const [collectionName, Model] of Object.entries(backupModels)) {
-      previousData[collectionName] = await Model.find().lean();
-    }
+    const { drive, folderId } = getGoogleDrive();
+    const backup = await createBackup();
+    const exportedAt = new Date();
+    const filename = `${DRIVE_BACKUP_PREFIX}${exportedAt.toISOString().replace(/[:.]/g, '-')}.json`;
+    const created = await drive.files.create({
+      requestBody: {
+        name: filename,
+        mimeType: 'application/json',
+        parents: [folderId]
+      },
+      media: {
+        mimeType: 'application/json',
+        body: Buffer.from(JSON.stringify(backup))
+      },
+      fields: 'id,name,createdTime',
+      supportsAllDrives: true
+    });
+    return res.json({ success: true, backup: created.data });
   } catch (err) {
-    return res.status(500).json({ success: false, error: 'Could not read the current database before restoring.' });
+    console.error('Google Drive backup upload failed:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Could not upload the backup to Google Drive.' });
   }
+});
 
+router.get('/backup/drive', requireBackupKey, async (req, res) => {
   try {
-    for (const [collectionName, Model] of Object.entries(backupModels)) {
-      await replaceCollection(Model, req.body.collections[collectionName]);
+    const { drive, folderId } = getGoogleDrive();
+    const escapedFolderId = folderId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const result = await drive.files.list({
+      q: `'${escapedFolderId}' in parents and name contains '${DRIVE_BACKUP_PREFIX}' and mimeType = 'application/json' and trashed = false`,
+      fields: 'files(id,name,createdTime,size)',
+      orderBy: 'createdTime desc',
+      pageSize: 100,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true
+    });
+    return res.json({ success: true, backups: result.data.files || [] });
+  } catch (err) {
+    console.error('Google Drive backup listing failed:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Could not list Google Drive backups.' });
+  }
+});
+
+router.post('/backup/drive/restore', requireBackupKey, async (req, res) => {
+  try {
+    const { fileId } = req.body || {};
+    if (typeof fileId !== 'string' || !fileId.trim()) {
+      return res.status(400).json({ success: false, error: 'Select a Google Drive backup to restore.' });
     }
-  } catch (restoreError) {
+
+    const { drive, folderId } = getGoogleDrive();
+    const metadata = await drive.files.get({
+      fileId,
+      fields: 'id,name,mimeType,parents,trashed,size',
+      supportsAllDrives: true
+    });
+    const file = metadata.data;
+    if (
+      file.trashed ||
+      file.mimeType !== 'application/json' ||
+      !file.name.startsWith(DRIVE_BACKUP_PREFIX) ||
+      !(file.parents || []).includes(folderId)
+    ) {
+      return res.status(400).json({ success: false, error: 'The selected file is not a valid backup in the configured Drive folder.' });
+    }
+    if (Number(file.size) > MAX_BACKUP_SIZE) {
+      return res.status(413).json({ success: false, error: 'The selected backup exceeds the 50 MB restore limit.' });
+    }
+
+    const download = await drive.files.get(
+      { fileId, alt: 'media', supportsAllDrives: true },
+      { responseType: 'arraybuffer' }
+    );
+    const contents = Buffer.from(download.data);
+    if (contents.length > MAX_BACKUP_SIZE) {
+      return res.status(413).json({ success: false, error: 'The selected backup exceeds the 50 MB restore limit.' });
+    }
+
+    let backup;
     try {
-      for (const [collectionName, Model] of Object.entries(backupModels)) {
-        await replaceCollection(Model, previousData[collectionName]);
-      }
-    } catch (rollbackError) {
-      console.error('Database restore failed and rollback was incomplete:', rollbackError);
-      return res.status(500).json({
-        success: false,
-        error: 'Restore failed and the previous database could not be fully recovered. Check the server logs immediately.'
-      });
+      backup = JSON.parse(contents.toString('utf8'));
+    } catch {
+      return res.status(400).json({ success: false, error: 'The selected Google Drive file is not valid JSON.' });
     }
-    console.error('Database restore failed; the previous data was restored:', restoreError);
-    return res.status(500).json({ success: false, error: 'Restore failed. The previous database data was restored.' });
+    const result = await restoreDatabaseBackup(backup);
+    return res.status(result.status).json(result.body);
+  } catch (err) {
+    console.error('Google Drive backup restore failed:', err);
+    return res.status(500).json({ success: false, error: err.message || 'Could not restore the Google Drive backup.' });
   }
-
-  return res.json({
-    success: true,
-    message: 'Backup restored successfully.',
-    stats: {
-      requests: req.body.collections.requests.length,
-      teamMembers: req.body.collections.teamMembers.length,
-      pushSubscriptions: req.body.collections.pushSubscriptions.length
-    }
-  });
 });
 
 // DELETE / CLEAR all maintenance requests from the database (Danger Zone)
