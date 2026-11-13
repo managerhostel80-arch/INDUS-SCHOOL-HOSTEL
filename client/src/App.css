@@ -101,8 +101,8 @@ body {
   gap: 6px;
   padding: 0;
   flex: 0 1 auto;
-  max-height: min(36vh, 300px);
-  grid-template-rows: repeat(3, minmax(62px, 1fr)) minmax(32px, 0.5fr);
+  max-height: min(40vh, 330px);
+  grid-template-rows: repeat(3, minmax(68px, 1fr)) minmax(36px, 0.5fr);
 }
 
 .dashboard-topbar {
@@ -127,7 +127,7 @@ body {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  min-height: 62px;
+  min-height: 68px;
   padding: 0 3px;
   border: 1px solid var(--card-border, rgba(15, 23, 42, 0.1));
   border-radius: 9px;
@@ -185,7 +185,7 @@ body {
 
 .dashboard-card-full {
   grid-column: span 2;
-  min-height: 32px;
+  min-height: 36px;
   padding: 1px 5px;
 }
 
@@ -479,17 +479,17 @@ body {
   .dashboard-grid {
     flex: 0 0 auto;
     max-height: none;
-    grid-template-rows: repeat(3, minmax(62px, auto)) minmax(30px, auto);
+    grid-template-rows: repeat(3, minmax(68px, auto)) minmax(34px, auto);
     gap: 3px;
   }
 
   .dashboard-card {
-    min-height: 62px;
+    min-height: 68px;
     padding: 0 2px;
   }
 
   .dashboard-card-full {
-    min-height: 30px;
+    min-height: 34px;
     padding: 1px 5px;
   }
 
