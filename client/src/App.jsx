@@ -98,8 +98,12 @@ function App() {
   const [cameraStream, setCameraStream] = useState(null);
   const [cameraError, setCameraError] = useState('');
   const [cameraFacingMode, setCameraFacingMode] = useState('environment');
+  const [backupKey, setBackupKey] = useState('');
+  const [backupStatus, setBackupStatus] = useState('');
+  const [isHandlingBackup, setIsHandlingBackup] = useState(false);
   const cameraVideoRef = useRef(null);
   const reportPhotoInputRef = useRef(null);
+  const restoreBackupInputRef = useRef(null);
 
   useEffect(() => {
     const updateISTClock = () => {
@@ -362,6 +366,80 @@ function App() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleExportBackup = async () => {
+    if (!backupKey.trim()) {
+      setBackupStatus('Enter the server backup key first.');
+      return;
+    }
+
+    setIsHandlingBackup(true);
+    setBackupStatus('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/db/backup`, {
+        headers: { 'x-backup-key': backupKey }
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+        throw new Error(result?.error || 'Could not export the database backup.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const filename = disposition.match(/filename="([^"]+)"/)?.[1] || 'hostel-maintenance-backup.json';
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+      setBackupStatus('Backup downloaded to your browser’s downloads folder.');
+    } catch (error) {
+      setBackupStatus(error.message || 'Could not reach the server.');
+    } finally {
+      setIsHandlingBackup(false);
+    }
+  };
+
+  const handleRestoreBackup = async event => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!backupKey.trim()) {
+      setBackupStatus('Enter the server backup key first.');
+      return;
+    }
+    if (!window.confirm('Restore this backup? This permanently replaces all requests, team members, and push subscriptions currently in the database.')) {
+      return;
+    }
+
+    setIsHandlingBackup(true);
+    setBackupStatus('');
+    try {
+      const backup = JSON.parse(await file.text());
+      const response = await fetch(`${API_BASE_URL}/api/db/backup/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-backup-key': backupKey
+        },
+        body: JSON.stringify(backup)
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Could not restore this backup.');
+      }
+
+      setBackupStatus(result.message);
+      await fetchData();
+    } catch (error) {
+      setBackupStatus(error.message || 'Could not restore this backup.');
+    } finally {
+      setIsHandlingBackup(false);
     }
   };
 
@@ -688,7 +766,7 @@ function App() {
 
             {/* Logout Button matching Reference Bottom Bar */}
             <div className="dashboard-logout">
-              <button type="button" onClick={() => { setIsLoggedIn(false); setUserRole(''); setLoginData({ username: '', password: '' }); setActiveTab('admin-dashboard'); }}>
+              <button type="button" onClick={() => { setIsLoggedIn(false); setUserRole(''); setLoginData({ username: '', password: '' }); setBackupKey(''); setBackupStatus(''); setActiveTab('admin-dashboard'); }}>
                 Logout
               </button>
             </div>
@@ -1058,6 +1136,51 @@ function App() {
             <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Settings</h3>
             <p>Requests: <b>{dbStats.requests}</b></p>
+            <section aria-labelledby="database-backup-heading" style={{ marginTop: '16px', padding: '10px', border: '1px solid #b6d4fe', borderRadius: '6px' }}>
+              <h4 id="database-backup-heading" style={{ margin: '0 0 8px', fontSize: '13px' }}>Database Backup</h4>
+              <label htmlFor="database-backup-key" style={{ display: 'block', marginBottom: '4px' }}>Server backup key</label>
+              <input
+                id="database-backup-key"
+                type="password"
+                autoComplete="new-password"
+                value={backupKey}
+                onChange={event => setBackupKey(event.target.value)}
+                style={inputStyle}
+              />
+              <p style={{ margin: '6px 0', color: '#555' }}>
+                Enter the DB_BACKUP_KEY configured on the server. Export downloads JSON records and media links; media files themselves are not included.
+              </p>
+              <button
+                type="button"
+                onClick={handleExportBackup}
+                disabled={isHandlingBackup}
+                style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '4px', opacity: isHandlingBackup ? 0.7 : 1 }}
+              >
+                {isHandlingBackup ? 'Working...' : 'Export Backup'}
+              </button>
+              <input
+                ref={restoreBackupInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleRestoreBackup}
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!backupKey.trim()) {
+                    setBackupStatus('Enter the server backup key first.');
+                    return;
+                  }
+                  restoreBackupInputRef.current?.click();
+                }}
+                disabled={isHandlingBackup}
+                style={{ width: '100%', padding: '10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '8px', opacity: isHandlingBackup ? 0.7 : 1 }}
+              >
+                Restore Backup
+              </button>
+              {backupStatus && <p role="status" style={{ margin: '8px 0 0', color: backupStatus.includes('successfully') || backupStatus.includes('downloaded') ? '#198754' : '#b02a37' }}>{backupStatus}</p>}
+            </section>
             <section aria-labelledby="delete-completed-heading" style={{ marginTop: '16px', padding: '10px', border: '1px solid #f1aeb5', borderRadius: '6px' }}>
               <h4 id="delete-completed-heading" style={{ margin: '0 0 8px', fontSize: '13px' }}>Delete Completed Complaints</h4>
               <label htmlFor="delete-completed-category" style={{ display: 'block', marginBottom: '4px' }}>Filter completed complaints</label>
