@@ -100,15 +100,15 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   padding: 0;
-  flex: 0 0 auto;
-  grid-template-rows: repeat(3, minmax(62px, auto)) minmax(32px, auto);
+  flex: 1 1 auto;
+  grid-template-rows: repeat(3, minmax(62px, 1fr)) minmax(32px, 0.5fr);
 }
 
 .dashboard-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 46px;
+  min-height: 54px;
   margin-bottom: 8px;
   padding: 4px 8px;
   border-radius: 7px;
