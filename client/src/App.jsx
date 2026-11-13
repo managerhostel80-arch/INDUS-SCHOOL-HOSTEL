@@ -101,6 +101,8 @@ function App() {
   const [backupKey, setBackupKey] = useState('');
   const [backupStatus, setBackupStatus] = useState('');
   const [isHandlingBackup, setIsHandlingBackup] = useState(false);
+  const [driveBackups, setDriveBackups] = useState([]);
+  const [selectedDriveBackupId, setSelectedDriveBackupId] = useState('');
   const cameraVideoRef = useRef(null);
   const reportPhotoInputRef = useRef(null);
   const restoreBackupInputRef = useRef(null);
@@ -438,6 +440,100 @@ function App() {
       await fetchData();
     } catch (error) {
       setBackupStatus(error.message || 'Could not restore this backup.');
+    } finally {
+      setIsHandlingBackup(false);
+    }
+  };
+
+  const handleExportBackupToDrive = async () => {
+    if (!backupKey.trim()) {
+      setBackupStatus('Enter the server backup key first.');
+      return;
+    }
+
+    setIsHandlingBackup(true);
+    setBackupStatus('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/db/backup/drive`, {
+        method: 'POST',
+        headers: { 'x-backup-key': backupKey }
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Could not upload the backup to Google Drive.');
+      }
+      setBackupStatus(`Backup uploaded successfully to Google Drive: ${result.backup.name}`);
+    } catch (error) {
+      setBackupStatus(error.message || 'Could not reach the server.');
+    } finally {
+      setIsHandlingBackup(false);
+    }
+  };
+
+  const handleLoadDriveBackups = async () => {
+    if (!backupKey.trim()) {
+      setBackupStatus('Enter the server backup key first.');
+      return;
+    }
+
+    setIsHandlingBackup(true);
+    setBackupStatus('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/db/backup/drive`, {
+        headers: { 'x-backup-key': backupKey }
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Could not list Google Drive backups.');
+      }
+      const backups = result.backups || [];
+      setDriveBackups(backups);
+      setSelectedDriveBackupId(currentId =>
+        backups.some(backup => backup.id === currentId) ? currentId : backups[0]?.id || ''
+      );
+      setBackupStatus(backups.length
+        ? `Found ${backups.length} backup(s) in Google Drive.`
+        : 'No backups found in the configured Google Drive folder.');
+    } catch (error) {
+      setBackupStatus(error.message || 'Could not reach the server.');
+    } finally {
+      setIsHandlingBackup(false);
+    }
+  };
+
+  const handleRestoreDriveBackup = async () => {
+    if (!backupKey.trim()) {
+      setBackupStatus('Enter the server backup key first.');
+      return;
+    }
+    if (!selectedDriveBackupId) {
+      setBackupStatus('Load and select a Google Drive backup first.');
+      return;
+    }
+    const selectedBackup = driveBackups.find(backup => backup.id === selectedDriveBackupId);
+    if (!window.confirm(`Restore "${selectedBackup?.name || 'this Google Drive backup'}"? This permanently replaces all requests, team members, and push subscriptions currently in the database.`)) {
+      return;
+    }
+
+    setIsHandlingBackup(true);
+    setBackupStatus('');
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/db/backup/drive/restore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-backup-key': backupKey
+        },
+        body: JSON.stringify({ fileId: selectedDriveBackupId })
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.success) {
+        throw new Error(result?.error || 'Could not restore the Google Drive backup.');
+      }
+      setBackupStatus(result.message);
+      await fetchData();
+    } catch (error) {
+      setBackupStatus(error.message || 'Could not restore the Google Drive backup.');
     } finally {
       setIsHandlingBackup(false);
     }
@@ -1178,6 +1274,50 @@ function App() {
                 style={{ width: '100%', padding: '10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '8px', opacity: isHandlingBackup ? 0.7 : 1 }}
               >
                 Restore Backup
+              </button>
+              <hr style={{ margin: '14px 0', border: 0, borderTop: '1px solid #ddd' }} />
+              <h4 style={{ margin: '0 0 8px', fontSize: '13px' }}>Google Drive Backup</h4>
+              <p style={{ margin: '6px 0', color: '#555' }}>
+                Save a database backup to the server-configured Google Drive folder, or restore a saved Drive backup.
+              </p>
+              <button
+                type="button"
+                onClick={handleExportBackupToDrive}
+                disabled={isHandlingBackup}
+                style={{ width: '100%', padding: '10px', background: '#198754', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '4px', opacity: isHandlingBackup ? 0.7 : 1 }}
+              >
+                {isHandlingBackup ? 'Working...' : 'Export to Google Drive'}
+              </button>
+              <label htmlFor="drive-backup-select" style={{ display: 'block', margin: '10px 0 4px' }}>Google Drive backup</label>
+              <select
+                id="drive-backup-select"
+                value={selectedDriveBackupId}
+                onChange={event => setSelectedDriveBackupId(event.target.value)}
+                disabled={isHandlingBackup || driveBackups.length === 0}
+                style={inputStyle}
+              >
+                {driveBackups.length === 0 && <option value="">Load backups to choose one</option>}
+                {driveBackups.map(backup => (
+                  <option key={backup.id} value={backup.id}>
+                    {backup.name}{backup.createdTime ? ` — ${formatDMYDate(backup.createdTime)}` : ''}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleLoadDriveBackups}
+                disabled={isHandlingBackup}
+                style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '8px', opacity: isHandlingBackup ? 0.7 : 1 }}
+              >
+                {isHandlingBackup ? 'Working...' : 'Load Drive Backups'}
+              </button>
+              <button
+                type="button"
+                onClick={handleRestoreDriveBackup}
+                disabled={isHandlingBackup || !selectedDriveBackupId}
+                style={{ width: '100%', padding: '10px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '8px', opacity: isHandlingBackup || !selectedDriveBackupId ? 0.7 : 1 }}
+              >
+                {isHandlingBackup ? 'Working...' : 'Import from Google Drive'}
               </button>
               {backupStatus && <p role="status" style={{ margin: '8px 0 0', color: backupStatus.includes('successfully') || backupStatus.includes('downloaded') ? '#198754' : '#b02a37' }}>{backupStatus}</p>}
             </section>
