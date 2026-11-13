@@ -12,6 +12,34 @@ const getUploadedFileUrl = (file) => (
   file?.path?.startsWith('http') ? file.path : file ? `/uploads/${file.filename}` : ''
 );
 
+const createRequestWithUniqueId = async (requestData) => {
+  while (true) {
+    const [latestRequest] = await MaintenanceRequest.aggregate([
+      { $match: { requestId: /^MNT-\d+$/ } },
+      {
+        $project: {
+          sequence: {
+            $convert: {
+              input: { $arrayElemAt: [{ $split: ['$requestId', '-'] }, 1] },
+              to: 'long',
+              onError: 0,
+              onNull: 0
+            }
+          }
+        }
+      },
+      { $group: { _id: null, sequence: { $max: '$sequence' } } }
+    ]);
+    const requestId = `MNT-${String(Number(latestRequest?.sequence || 0) + 1).padStart(5, '0')}`;
+
+    try {
+      return await MaintenanceRequest.create({ ...requestData, requestId });
+    } catch (error) {
+      if (error.code !== 11000 || !error.keyPattern?.requestId) throw error;
+    }
+  }
+};
+
 // Get all maintenance requests and dashboard stats
 exports.getRequests = async (req, res) => {
   try {
@@ -50,11 +78,8 @@ exports.createRequest = async (req, res) => {
     const files = req.files || {};
     const photo = getUploadedFileUrl(files.photo?.[0]);
     const video = getUploadedFileUrl(files.video?.[0]);
-    const count = await MaintenanceRequest.countDocuments();
-    const requestId = `MNT-${String(count + 1).padStart(5, '0')}`;
 
-    const newRequest = new MaintenanceRequest({
-      requestId,
+    const savedRequest = await createRequestWithUniqueId({
       category,
       location,
       problemDescription,
@@ -66,8 +91,6 @@ exports.createRequest = async (req, res) => {
       video,
       status: 'New'
     });
-
-    const savedRequest = await newRequest.save();
     setImmediate(async () => {
       const notifications = [
         ['push', () => pushNotifications.notifyNewRequest(savedRequest)]
