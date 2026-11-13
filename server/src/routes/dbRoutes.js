@@ -93,18 +93,33 @@ const createBackup = async () => {
 const getGoogleDrive = () => {
   const encodedCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64;
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  if (!encodedCredentials || !folderId) {
-    throw new Error('Google Drive backup is not configured on the server.');
+  const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  const serviceAccountPrivateKey = process.env.GOOGLE_PRIVATE_KEY;
+  const hasJsonCredentials = Boolean(encodedCredentials);
+  const hasSeparateCredentials = Boolean(serviceAccountEmail && serviceAccountPrivateKey);
+
+  if (!folderId) {
+    throw new Error('Google Drive is missing the GOOGLE_DRIVE_FOLDER_ID setting on the server.');
+  }
+  if (!hasJsonCredentials && !hasSeparateCredentials) {
+    throw new Error('Google Drive is missing service-account credentials. Set GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 or both GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY on the server.');
   }
 
   let credentials;
-  try {
-    credentials = JSON.parse(Buffer.from(encodedCredentials, 'base64').toString('utf8'));
-  } catch {
-    throw new Error('The Google Drive service-account configuration is invalid.');
+  if (hasJsonCredentials) {
+    try {
+      credentials = JSON.parse(Buffer.from(encodedCredentials, 'base64').toString('utf8'));
+    } catch {
+      throw new Error('The GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 setting is not valid Base64-encoded service-account JSON.');
+    }
+  } else {
+    credentials = {
+      client_email: serviceAccountEmail,
+      private_key: serviceAccountPrivateKey.replace(/\\n/g, '\n')
+    };
   }
   if (!credentials.client_email || !credentials.private_key) {
-    throw new Error('The Google Drive service-account configuration is incomplete.');
+    throw new Error('The Google Drive service-account credentials are incomplete. Check the email and private key in the server environment.');
   }
 
   const auth = new google.auth.GoogleAuth({
