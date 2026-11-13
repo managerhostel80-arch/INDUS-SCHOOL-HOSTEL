@@ -4,6 +4,19 @@ import './App.css';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://indus-school-hostel.onrender.com').replace(/\/+$/, '');
 const BLOCKED_NOTIFICATION_MESSAGE = 'Notifications are blocked on this device. In Chrome, open Settings > Site settings > Notifications and allow this site. For an installed shortcut, also check Android Settings > Apps > Hostel 360 > Notifications. Reopen the app and tap Enable notifications again.';
 
+const readApiJson = async (response, action) => {
+  const responseText = await response.text();
+  try {
+    return responseText ? JSON.parse(responseText) : null;
+  } catch {
+    const isHtml = response.headers.get('content-type')?.includes('text/html') || /^\s*</.test(responseText);
+    const detail = isHtml
+      ? 'The server returned a webpage instead of API data. Deploy the updated backend and verify VITE_API_BASE_URL points to it.'
+      : 'The server returned an invalid response.';
+    throw new Error(`${action}: ${detail} (HTTP ${response.status}).`);
+  }
+};
+
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -431,7 +444,7 @@ function App() {
         },
         body: JSON.stringify(backup)
       });
-      const result = await response.json();
+      const result = await readApiJson(response, 'Could not upload the backup to Google Drive');
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || 'Could not restore this backup.');
       }
@@ -458,7 +471,7 @@ function App() {
         method: 'POST',
         headers: { 'x-backup-key': backupKey }
       });
-      const result = await response.json();
+      const result = await readApiJson(response, 'Could not list Google Drive backups');
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || 'Could not upload the backup to Google Drive.');
       }
@@ -482,7 +495,7 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/api/db/backup/drive`, {
         headers: { 'x-backup-key': backupKey }
       });
-      const result = await response.json();
+      const result = await readApiJson(response, 'Could not restore the Google Drive backup');
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || 'Could not list Google Drive backups.');
       }
@@ -1252,7 +1265,7 @@ function App() {
                 disabled={isHandlingBackup}
                 style={{ width: '100%', padding: '10px', background: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginTop: '4px', opacity: isHandlingBackup ? 0.7 : 1 }}
               >
-                {isHandlingBackup ? 'Working...' : 'Export Backup'}
+                {isHandlingBackup ? 'Working...' : 'Backup'}
               </button>
               <input
                 ref={restoreBackupInputRef}
