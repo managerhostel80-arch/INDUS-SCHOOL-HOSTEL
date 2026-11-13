@@ -444,7 +444,7 @@ function App() {
         },
         body: JSON.stringify(backup)
       });
-      const result = await readApiJson(response, 'Could not upload the backup to Google Drive');
+      const result = await readApiJson(response, 'Could not restore this backup');
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || 'Could not restore this backup.');
       }
@@ -471,7 +471,7 @@ function App() {
         method: 'POST',
         headers: { 'x-backup-key': backupKey }
       });
-      const result = await readApiJson(response, 'Could not list Google Drive backups');
+      const result = await readApiJson(response, 'Could not upload the backup to Google Drive');
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || 'Could not upload the backup to Google Drive.');
       }
@@ -495,7 +495,7 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/api/db/backup/drive`, {
         headers: { 'x-backup-key': backupKey }
       });
-      const result = await readApiJson(response, 'Could not restore the Google Drive backup');
+      const result = await readApiJson(response, 'Could not list Google Drive backups');
       if (!response.ok || !result?.success) {
         throw new Error(result?.error || 'Could not list Google Drive backups.');
       }
