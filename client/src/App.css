@@ -102,7 +102,7 @@ body {
   padding: 0;
   flex: 0 1 auto;
   max-height: min(40vh, 330px);
-  grid-template-rows: repeat(3, minmax(68px, 1fr)) minmax(36px, 0.5fr);
+  grid-template-rows: repeat(3, minmax(68px, 1fr)) minmax(48px, 0.5fr);
 }
 
 .dashboard-topbar {
@@ -185,7 +185,7 @@ body {
 
 .dashboard-card-full {
   grid-column: span 2;
-  min-height: 36px;
+  min-height: 48px;
   padding: 1px 5px;
 }
 
@@ -259,7 +259,7 @@ body {
 }
 
 .dashboard-quick-stats {
-  margin-top: 9px;
+  margin-top: 16px;
 }
 
 .dashboard-quick-stats-title {
@@ -342,7 +342,7 @@ body {
 
 .dashboard-announcement-logo {
   width: 58px;
-  height: 48px;
+  height: 60px;
   flex: 0 0 58px;
   object-fit: contain;
   border-radius: 4px;
@@ -479,7 +479,7 @@ body {
   .dashboard-grid {
     flex: 0 0 auto;
     max-height: none;
-    grid-template-rows: repeat(3, minmax(68px, auto)) minmax(34px, auto);
+    grid-template-rows: repeat(3, minmax(68px, auto)) minmax(42px, auto);
     gap: 3px;
   }
 
@@ -489,7 +489,7 @@ body {
   }
 
   .dashboard-card-full {
-    min-height: 34px;
+    min-height: 42px;
     padding: 1px 5px;
   }
 
@@ -500,7 +500,7 @@ body {
   }
 
   .dashboard-quick-stats {
-    margin-top: 6px;
+    margin-top: 12px;
   }
 
   .dashboard-announcement {
@@ -509,7 +509,7 @@ body {
   }
 
   .dashboard-announcement-logo {
-    height: 44px;
+    height: 54px;
   }
 
   .dashboard-logout {
