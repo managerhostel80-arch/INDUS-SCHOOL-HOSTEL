@@ -100,7 +100,8 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   padding: 0;
-  flex: 0.8 1 auto;
+  flex: 0 1 auto;
+  max-height: min(36vh, 300px);
   grid-template-rows: repeat(3, minmax(62px, 1fr)) minmax(32px, 0.5fr);
 }
 
@@ -477,6 +478,7 @@ body {
 
   .dashboard-grid {
     flex: 0 0 auto;
+    max-height: none;
     grid-template-rows: repeat(3, minmax(62px, auto)) minmax(30px, auto);
     gap: 3px;
   }
