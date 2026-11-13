@@ -99,6 +99,7 @@ function App() {
   const [cameraError, setCameraError] = useState('');
   const [cameraFacingMode, setCameraFacingMode] = useState('environment');
   const cameraVideoRef = useRef(null);
+  const reportPhotoInputRef = useRef(null);
 
   useEffect(() => {
     const updateISTClock = () => {
@@ -230,6 +231,7 @@ function App() {
       setSubmittedRequest(result.data);
       setActiveTab('success-screen');
       setFormData({ category: 'Electrical', location: '', problemDescription: '', reportedByName: '', reportedByMobile: '', reportedAt: '', urgencyLevel: 'Medium', photo: null });
+      if (reportPhotoInputRef.current) reportPhotoInputRef.current.value = '';
       await fetchData();
     } catch (err) {
       console.error('Submission error:', err);
@@ -271,8 +273,14 @@ function App() {
     const context = canvas.getContext('2d');
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     canvas.toBlob(blob => {
-      if (!blob) return;
+      if (!blob) {
+        setCameraError('Photo could not be captured. Please try again.');
+        return;
+      }
       const photo = new File([blob], `complaint-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const photoFiles = new DataTransfer();
+      photoFiles.items.add(photo);
+      if (reportPhotoInputRef.current) reportPhotoInputRef.current.files = photoFiles.files;
       setFormData(previous => ({ ...previous, photo }));
       setCameraStream(null);
       setCameraError('');
@@ -731,6 +739,7 @@ function App() {
               <div>
                 <label style={{ fontWeight: 'bold' }}>Photo</label>
                 <input
+                  ref={reportPhotoInputRef}
                   type="file"
                   accept="image/*"
                   onChange={event => setFormData(previous => ({
