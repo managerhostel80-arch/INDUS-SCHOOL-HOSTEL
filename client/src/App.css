@@ -100,7 +100,7 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 6px;
   padding: 0;
-  flex: 1 1 auto;
+  flex: 0.9 1 auto;
   grid-template-rows: repeat(3, minmax(62px, 1fr)) minmax(32px, 0.5fr);
 }
 
