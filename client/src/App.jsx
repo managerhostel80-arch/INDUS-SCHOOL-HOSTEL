@@ -163,7 +163,7 @@ function App() {
     } else if (username === 'staff' && password === 'user123') {
       setUserRole('user');
       setIsLoggedIn(true);
-      setActiveTab('report');
+      setActiveTab('admin-dashboard');
       setLoginError('');
     } else {
       setLoginError('Incorrect username or password. Please try again.');
@@ -525,15 +525,15 @@ function App() {
       <div className="app-main" style={{ padding: '8px', width: '100%', maxWidth: '600px', boxSizing: 'border-box' }}>
         
         {/* ADMIN DASHBOARD HUB */}
-        {activeTab === 'admin-dashboard' && userRole === 'admin' && (
+        {activeTab === 'admin-dashboard' && (userRole === 'admin' || userRole === 'user') && (
           <div className="dashboard-overview">
             
             <img className="dashboard-footer-image" src="/dashboard-school.jpg" alt="Montessori Indus Residential School campus" />
 
-            {/* Top Bar Info (Admin Panel & Live IST Clock) */}
+            {/* Top Bar Info & Live IST Clock */}
             <div className="dashboard-topbar">
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>👤</span> Admin Panel
+                <span>👤</span> {userRole === 'admin' ? 'Admin Panel' : 'Staff Panel'}
               </div>
               {currentTime && (
                 <div style={{ fontSize: '11px', color: '#475569', background: '#e2e8f0', padding: '3px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -619,7 +619,14 @@ function App() {
               </button>
 
               {/* Admin Settings (Full Width Span) */}
-              <button onClick={() => setActiveTab('db-management')} className="dashboard-card dashboard-card-full dashboard-card-slate">
+              <button
+                type="button"
+                onClick={() => setActiveTab('db-management')}
+                className="dashboard-card dashboard-card-full dashboard-card-slate"
+                disabled={userRole !== 'admin'}
+                aria-label={userRole === 'admin' ? 'Admin Settings' : 'Admin Settings (unavailable to staff)'}
+                style={userRole !== 'admin' ? { opacity: 0.55, cursor: 'not-allowed' } : undefined}
+              >
                 <div className="dashboard-card-content">
                   <div className="dashboard-card-icon">⚙️</div>
                   <div className="dashboard-card-copy">
