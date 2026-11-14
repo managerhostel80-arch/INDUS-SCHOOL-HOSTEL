@@ -1,5 +1,6 @@
 const express = require('express');
 const crypto = require('crypto');
+const { Readable } = require('stream');
 const { google } = require('googleapis');
 const router = express.Router();
 const MaintenanceRequest = require('../models/Request');
@@ -245,7 +246,7 @@ router.post('/backup/drive', requireBackupKey, async (req, res) => {
       },
       media: {
         mimeType: 'application/json',
-        body: Buffer.from(JSON.stringify(backup))
+        body: Readable.from(Buffer.from(JSON.stringify(backup)))
       },
       fields: 'id,name,createdTime',
       supportsAllDrives: true
@@ -260,12 +261,22 @@ router.post('/backup/drive', requireBackupKey, async (req, res) => {
 router.get('/backup/drive', requireBackupKey, async (req, res) => {
   try {
     const { drive, folderId } = getGoogleDrive();
+    const folder = await drive.files.get({
+      fileId: folderId,
+      fields: 'id,driveId,mimeType,trashed',
+      supportsAllDrives: true
+    });
+    if (folder.data.trashed || folder.data.mimeType !== 'application/vnd.google-apps.folder') {
+      throw new Error('The configured Google Drive backup folder does not exist or is not accessible.');
+    }
+
     const escapedFolderId = folderId.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const result = await drive.files.list({
       q: `'${escapedFolderId}' in parents and name contains '${DRIVE_BACKUP_PREFIX}' and mimeType = 'application/json' and trashed = false`,
       fields: 'files(id,name,createdTime,size)',
       orderBy: 'createdTime desc',
       pageSize: 100,
+      ...(folder.data.driveId ? { corpora: 'drive', driveId: folder.data.driveId } : {}),
       includeItemsFromAllDrives: true,
       supportsAllDrives: true
     });
