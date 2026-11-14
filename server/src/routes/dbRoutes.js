@@ -148,7 +148,15 @@ const getGoogleDrive = () => {
 
   let credentials;
   if (hasJsonCredentials) {
-    credentials = parseServiceAccountCredentials(encodedCredentials);
+    try {
+      credentials = parseServiceAccountCredentials(encodedCredentials);
+    } catch (error) {
+      if (!hasSeparateCredentials) throw error;
+      credentials = {
+        client_email: serviceAccountEmail,
+        private_key: serviceAccountPrivateKey.replace(/\\n/g, '\n')
+      };
+    }
   } else {
     credentials = {
       client_email: serviceAccountEmail,
