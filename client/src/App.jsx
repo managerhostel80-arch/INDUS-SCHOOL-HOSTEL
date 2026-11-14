@@ -944,7 +944,6 @@ function App() {
                 </button>
                 <p style={{ margin: '4px 0 0', color: '#666', fontSize: '11px' }}>
                   Choose a photo above or use the camera button.
-                  {formData.photo ? ` Selected: ${formData.photo.name}` : ''}
                 </p>
                 {cameraError && <p role="alert" style={{ margin: '4px 0 0', color: '#b02a37', fontSize: '11px' }}>{cameraError}</p>}
               </div>
