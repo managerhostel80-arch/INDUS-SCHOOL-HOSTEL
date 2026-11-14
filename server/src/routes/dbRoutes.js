@@ -167,6 +167,7 @@ const getGoogleDrive = () => {
   if (hasJsonCredentials) {
     try {
       credentials = parseServiceAccountCredentials(encodedCredentials);
+      validatePrivateKey(credentials.private_key);
     } catch (error) {
       if (!hasSeparateCredentials) throw error;
       credentials = {
@@ -183,7 +184,7 @@ const getGoogleDrive = () => {
   if (!credentials.client_email || !credentials.private_key) {
     throw new Error('The Google Drive service-account credentials are incomplete. Check the email and private key in the server environment.');
   }
-  validatePrivateKey(credentials.private_key);
+  if (!hasJsonCredentials) validatePrivateKey(credentials.private_key);
 
   const auth = new google.auth.GoogleAuth({
     credentials,
