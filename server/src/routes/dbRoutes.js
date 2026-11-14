@@ -91,6 +91,46 @@ const createBackup = async () => {
   };
 };
 
+const parseServiceAccountCredentials = value => {
+  const credentialsValue = value.trim();
+  let credentials;
+
+  if (credentialsValue.startsWith('{')) {
+    try {
+      credentials = JSON.parse(credentialsValue);
+    } catch {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 must contain valid service-account JSON or its Base64-encoded form.');
+    }
+  } else {
+    const base64Value = credentialsValue.replace(/\s/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Value) || base64Value.replace(/=+$/, '').length % 4 === 1) {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 must contain valid service-account JSON or its Base64-encoded form.');
+    }
+
+    const decodedValue = Buffer.from(base64Value, 'base64');
+    const canonicalBase64 = decodedValue.toString('base64').replace(/=+$/, '');
+    if (canonicalBase64 !== base64Value.replace(/=+$/, '')) {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 must contain valid service-account JSON or its Base64-encoded form.');
+    }
+
+    try {
+      credentials = JSON.parse(decodedValue.toString('utf8'));
+    } catch {
+      throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 must contain valid service-account JSON or its Base64-encoded form.');
+    }
+  }
+
+  if (
+    !credentials ||
+    typeof credentials !== 'object' ||
+    typeof credentials.client_email !== 'string' ||
+    typeof credentials.private_key !== 'string'
+  ) {
+    throw new Error('The Google Drive service-account JSON must include client_email and private_key.');
+  }
+  return credentials;
+};
+
 const getGoogleDrive = () => {
   const encodedCredentials = process.env.GOOGLE_SERVICE_ACCOUNT_JSON_BASE64;
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
@@ -108,11 +148,7 @@ const getGoogleDrive = () => {
 
   let credentials;
   if (hasJsonCredentials) {
-    try {
-      credentials = JSON.parse(Buffer.from(encodedCredentials, 'base64').toString('utf8'));
-    } catch {
-      throw new Error('The GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 setting is not valid Base64-encoded service-account JSON.');
-    }
+    credentials = parseServiceAccountCredentials(encodedCredentials);
   } else {
     credentials = {
       client_email: serviceAccountEmail,
