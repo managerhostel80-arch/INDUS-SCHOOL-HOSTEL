@@ -16,6 +16,20 @@ const backupModels = {
   pushSubscriptions: PushSubscription
 };
 
+const normalizePrivateKey = value => value
+  .trim()
+  .replace(/^["']|["']$/g, '')
+  .replace(/\\n/g, '\n')
+  .replace(/\r\n?/g, '\n');
+
+const validatePrivateKey = value => {
+  try {
+    crypto.createPrivateKey(value);
+  } catch {
+    throw new Error('The Google service-account private key is not valid PEM. Set GOOGLE_SERVICE_ACCOUNT_JSON_BASE64 to the exact service-account JSON (raw JSON or Base64), or configure GOOGLE_PRIVATE_KEY with the complete private key including its BEGIN/END lines. Replace the old key and redeploy the server.');
+  }
+};
+
 const requireBackupKey = (req, res, next) => {
   const configuredKey = process.env.DB_BACKUP_KEY;
   if (!configuredKey || configuredKey.length < 32) {
@@ -128,7 +142,10 @@ const parseServiceAccountCredentials = value => {
   ) {
     throw new Error('The Google Drive service-account JSON must include client_email and private_key.');
   }
-  return credentials;
+  return {
+    ...credentials,
+    private_key: normalizePrivateKey(credentials.private_key)
+  };
 };
 
 const getGoogleDrive = () => {
@@ -154,18 +171,19 @@ const getGoogleDrive = () => {
       if (!hasSeparateCredentials) throw error;
       credentials = {
         client_email: serviceAccountEmail,
-        private_key: serviceAccountPrivateKey.replace(/\\n/g, '\n')
+        private_key: normalizePrivateKey(serviceAccountPrivateKey)
       };
     }
   } else {
     credentials = {
       client_email: serviceAccountEmail,
-      private_key: serviceAccountPrivateKey.replace(/\\n/g, '\n')
+      private_key: normalizePrivateKey(serviceAccountPrivateKey)
     };
   }
   if (!credentials.client_email || !credentials.private_key) {
     throw new Error('The Google Drive service-account credentials are incomplete. Check the email and private key in the server environment.');
   }
+  validatePrivateKey(credentials.private_key);
 
   const auth = new google.auth.GoogleAuth({
     credentials,
