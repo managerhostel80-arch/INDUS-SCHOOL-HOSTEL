@@ -665,6 +665,7 @@ function App() {
   const completedJobs = requests.filter(r => r.status === 'Completed');
   const filteredCompletedJobs = completedFilterCategory === 'All' ? completedJobs : completedJobs.filter(r => r.category === completedFilterCategory);
   const newComplaintJobs = requests.filter(r => r.status === 'New');
+  const workInProgressJobs = requests.filter(r => r.status === 'Accepted' || r.status === 'In Progress');
   const requestStatusCounts = filteredRequests.reduce((counts, request) => {
     counts[request.status] = (counts[request.status] || 0) + 1;
     return counts;
@@ -750,6 +751,7 @@ function App() {
                   </div>
                 </div>
                 <div className="dashboard-card-arrow">›</div>
+                {requests.length > 0 && <span className="dashboard-badge">{requests.length}</span>}
               </button>
 
               {/* Report a Problem */}
@@ -787,6 +789,7 @@ function App() {
                   </div>
                 </div>
                 <div className="dashboard-card-arrow">›</div>
+                {workInProgressJobs.length > 0 && <span className="dashboard-badge">{workInProgressJobs.length}</span>}
               </button>
 
               {/* Completed */}
@@ -799,6 +802,7 @@ function App() {
                   </div>
                 </div>
                 <div className="dashboard-card-arrow">›</div>
+                {completedJobs.length > 0 && <span className="dashboard-badge">{completedJobs.length}</span>}
               </button>
 
               {/* All Requests */}
@@ -811,6 +815,7 @@ function App() {
                   </div>
                 </div>
                 <div className="dashboard-card-arrow">›</div>
+                {requests.length > 0 && <span className="dashboard-badge">{requests.length}</span>}
               </button>
 
               {/* Admin Settings (Full Width Span) */}
@@ -1083,9 +1088,9 @@ function App() {
           <div>
             <button onClick={() => setActiveTab('admin-dashboard')} className="dashboard-back-button">← Back to Dashboard</button>
             <h3 style={{ margin: '0 0 10px 0', fontSize: '15px' }}>Work in Progress</h3>
-            {requests.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#666' }}>No complaints found.</p>
-            ) : requests.map(req => {
+            {workInProgressJobs.length === 0 ? (
+              <p style={{ fontSize: '12px', color: '#666' }}>No active work found.</p>
+            ) : workInProgressJobs.map(req => {
               const hasCompletedPhoto = Boolean(completionData[req._id]?.completionPhoto);
               const hasCompletionVideo = Boolean(completionData[req._id]?.completionVideo);
               return (

@@ -250,7 +250,9 @@ body {
   font-size: 9px;
   font-weight: bold;
   width: 17px;
+  min-width: 17px;
   height: 17px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
